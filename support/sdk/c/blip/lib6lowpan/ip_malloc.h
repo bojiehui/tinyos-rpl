@@ -51,5 +51,9 @@ uint16_t ip_malloc_freespace();
 void ip_print_heap();
 #endif
 
+#ifdef __cplusplus
+}
+#endif
+
 #endif
 #endif
