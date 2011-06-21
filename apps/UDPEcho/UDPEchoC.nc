@@ -58,9 +58,9 @@ configuration UDPEchoC {
   UDPEchoP.IPStats -> IPDispatchC;
   UDPEchoP.UDPStats -> UdpC;
 
-#ifdef TOSSIM
 #ifdef RPL_ROUTING
   components RPLRoutingC;
+#ifdef TOSSIM
   UDPEchoP.RootControl -> RPLRoutingC;
 #endif
 #endif
@@ -76,4 +76,10 @@ configuration UDPEchoC {
 #ifndef  IN6_PREFIX
   components DhcpCmdC;
 #endif
+
+#ifdef PRINTFUART_ENABLED
+  components PrintfC;
+  components SerialStartC;
+#endif
+
 }

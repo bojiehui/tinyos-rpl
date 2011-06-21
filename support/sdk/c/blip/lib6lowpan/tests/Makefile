@@ -8,7 +8,7 @@ LIB_CONTEXT=../lib6lowpan.a context.o
 TARGETS=test_bit_range_zero_p test_pack_tcfl test_pack_multicast test_pack_address \
 	test_unpack_tcfl test_unpack_address \
 	test_unpack_multicast test_unpack_ipnh test_unpack_udp test_pack_nhc_chain \
-	test_lowpan_frag_get test_inet_ntop6
+	test_lowpan_frag_get test_inet_ntop6 test_ipnh_real_length test_iovec
 #	test_lowpan_pack_headers
 
 all: $(TARGETS)
@@ -17,7 +17,9 @@ check:
 	./run.sh
 
 clean:
-	rm $(TARGETS)
+	rm -f $(TARGETS) *.o
+
+distclean: clean
 
 test_bit_range_zero_p: test_bit_range_zero_p.c $(LIB_CONTEXT)
 	$(CC) -o $@ $(CFLAGS) $< $(LIB_CONTEXT) 
@@ -60,11 +62,18 @@ test_in_cksum: test_in_cksum.o $(LIB_CONTEXT)
 test_lowpan_recon_start: test_lowpan_recon_start.o $(LIB_CONTEXT)
 	$(CC)  -o $@ $(CFLAGS) $< $(LIB_CONTEXT) 
 
+
 test_lowpan_unpack_headers: test_lowpan_unpack_headers.o $(LIB_CONTEXT)
 	$(CC)  -o $@ $(CFLAGS) $< $(LIB_CONTEXT) 
 
 test_inet_ntop6: test_inet_ntop6.o $(LIB_CONTEXT)
 	$(CC)  -o $@ $(CFLAGS) $< $(LIB_CONTEXT) 
+
+test_ipnh_real_length: test_ipnh_real_length.o $(LIB_CONTEXT)
+	$(CC)  -o $@ $(CFLAGS) $< $(LIB_CONTEXT) 
+
+test_iovec: test_iovec.o $(LIB_CONTEXT)
+	$(CC)  -o $@ $(CFLAGS) $< $(LIB_CONTEXT)
 
 .c.o:
 	$(CC) -c -o $@ $< $(CFLAGS)

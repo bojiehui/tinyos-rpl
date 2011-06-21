@@ -38,7 +38,7 @@
 
 #include "sam3tchardware.h"
 
-generic module HplSam3TCP() @safe()
+generic module HplSam3TCP(uint32_t tc_base) @safe()
 {
     provides {
         interface Init;
@@ -54,10 +54,15 @@ generic module HplSam3TCP() @safe()
 }
 implementation
 {
+  volatile tc_t *TC_P = (volatile tc_t*)tc_base;
+
     command error_t Init.init()
     {
         uint32_t mck;
+        uint8_t clockSource;
 
+        call TC0.setMode(TC_CMR_CAPTURE);
+        call TC1.setMode(TC_CMR_CAPTURE);
         call TC2.setMode(TC_CMR_CAPTURE);
 
         // check the speed of the master clock
@@ -66,15 +71,19 @@ implementation
         mck = mck / 1000;
 
         if(mck >= 128)
-            call TC2.setClockSource(TC_CMR_CLK_TC4);
+          clockSource = TC_CMR_CLK_TC4;
         else if (mck >= 32)
-            call TC2.setClockSource(TC_CMR_CLK_TC3);
+          clockSource = TC_CMR_CLK_TC3;
         else if (mck >= 8)
-            call TC2.setClockSource(TC_CMR_CLK_TC2);
+          clockSource = TC_CMR_CLK_TC2;
         else if (mck >= 2)
-            call TC2.setClockSource(TC_CMR_CLK_TC1);
+          clockSource = TC_CMR_CLK_TC1;
         else
-            call TC2.setClockSource(TC_CMR_CLK_SLOW);
+          clockSource = TC_CMR_CLK_SLOW;
+
+        call TC0.setClockSource(clockSource);
+        call TC1.setClockSource(clockSource);
+        call TC2.setClockSource(clockSource);
 
         call TC2.enableEvents();
 
@@ -128,10 +137,16 @@ implementation
      call TC2.disableEvents();
   }
 
-    async event void ClockConfig.mainClockChanged() {};
-    async event void TC0.overflow() {};
-    async event void TC1.overflow() {};
-    async event void TC2.overflow() {};
+  command void TC.sync(){
+    tc_bcr_t bcr = TC_P->bcr;
+    bcr.bits.sync = 1;
+    TC_P->bcr = bcr;
+  }
+
+  async event void ClockConfig.mainClockChanged() {};
+  async event void TC0.overflow() {};
+  async event void TC1.overflow() {};
+  async event void TC2.overflow() {};
 }
 
 

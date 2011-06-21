@@ -47,13 +47,13 @@ configuration HplRV8564C
 implementation
 {
   components HplRV8564P as RTCP,
-             new SoftwareI2C2C() as I2C,
-             HplM16c62pGeneralIOC as IOs,
-             HplM16c62pInterruptC as Irqs,
-             new M16c62pInterruptC() as Irq,
+             new MulleI2C2C() as I2C,
+             HplM16c60GeneralIOC as IOs,
+             HplM16c60InterruptC as Irqs,
+             new M16c60InterruptC() as Irq,
              BusyWaitMicroC;
 
-  Irq.HplM16c62pInterrupt -> Irqs.Int0;
+  Irq.HplM16c60Interrupt -> Irqs.Int0;
 
   HplRV8564 = RTCP;
   RTCP.CLKOE -> IOs.PortP47;

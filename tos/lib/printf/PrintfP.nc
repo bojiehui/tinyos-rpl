@@ -84,22 +84,13 @@
 
 #include "printf.h"
 
-#ifdef _H_atmega128hardware_H
-static int uart_putchar(char c, FILE *stream);
-static FILE atm128_stdout = 
-	FDEV_SETUP_STREAM(TCAST(int (*)(char c, FILE *stream), uart_putchar), 
-	NULL, _FDEV_SETUP_WRITE);
-#endif
-
 module PrintfP @safe() {
   provides {
-    interface Boot;
+    interface Init;
+    interface Putchar;
   }
   uses {
-    interface Boot as MainBoot;
-    interface SplitControl as SerialControl;
     interface PrintfQueue<uint8_t> as Queue;
-
     interface AMSend;
     interface Packet;
     interface Leds;
@@ -108,32 +99,18 @@ module PrintfP @safe() {
 implementation {
   
   enum {
-    S_STOPPED,
     S_STARTED,
     S_FLUSHING,
   };
 
   message_t printfMsg;
-  uint8_t state = S_STOPPED;
+  uint8_t state = S_STARTED;
   
-  event void MainBoot.booted() {
-    call SerialControl.start();
-  }
-
-  event void SerialControl.startDone(error_t error) {
-    if (state == S_STOPPED) {
-#ifdef _H_atmega128hardware_H
-      stdout = &atm128_stdout;
-#endif
+  command error_t Init.init() {
       atomic state = S_STARTED;
-      signal Boot.booted();
-    }
+      return SUCCESS;
   }
 
-  event void SerialControl.stopDone(error_t error) {
-    atomic state = S_STOPPED;
-  }
-  
   task void retrySend() {
     if(call AMSend.send(AM_BROADCAST_ADDR, &printfMsg, sizeof(printf_msg_t)) != SUCCESS)
       post retrySend();
@@ -171,19 +148,9 @@ implementation {
     else post retrySend();
   }
   
-#ifdef _H_msp430hardware_h
-  int putchar(int c) __attribute__((noinline)) @C() @spontaneous() {
-#else
-#ifdef _H_atmega128hardware_H
-  int uart_putchar(char c, FILE *stream) __attribute__((noinline)) @C() @spontaneous() {
-#else
-#ifdef __M16C62PHARDWARE_H__
-  int lowlevel_putc(int c) __attribute__((noinline)) @C() @spontaneous() {
-#else
-  int lowlevel_putc(int c) __attribute__((noinline)) @C() @spontaneous() {
-#endif
-#endif
-#endif
+#undef putchar
+  command int Putchar.putchar (int c)
+  {
     if((state == S_STARTED) && (call Queue.size() >= ((PRINTF_BUFFER_SIZE)/2))) {
       state = S_FLUSHING;
       sendNext();

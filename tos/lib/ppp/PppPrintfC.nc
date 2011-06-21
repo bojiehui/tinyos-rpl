@@ -73,4 +73,7 @@ configuration PppPrintfC {
 
   PppProtocol = PppPrintfP;
   Ppp = PppPrintfP;
+
+  components PutcharC;
+  PutcharC.Putchar -> PppPrintfP;
 }

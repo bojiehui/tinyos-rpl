@@ -205,8 +205,10 @@ module PppIpv6P {
     const uint8_t* fpe;
     uint8_t* fp = call Ppp.getOutputFrame(PppProtocol_Ipv6, &fpe, FALSE, &key);
 
-    if ((fpe - fp) < len) {
-      call Ppp.releaseOutputFrame(fp);
+    if ((! fp) || ((fpe - fp) < len)) {
+      if (fp) {
+	call Ppp.releaseOutputFrame(fp);
+      }
       return ENOMEM;
     }
     memcpy(fp, message, len);

@@ -66,7 +66,10 @@ generic module RPLDAORoutingEngineP(){
 #define printfUART(X, args ...) dbg("RPLDAORoutingEngine",X,## args)
 #define INIT_DAO 1024;
 
+#define INIT_DAO 1024;
+
   uint8_t dao_double_count = 0;
+  uint8_t dao_double_limit = 8;
   uint32_t dao_rate = INIT_DAO;
   uint32_t delay_dao = 256; // dao batches will be fired 256 ms after the first dao message is scheduled
   // every 100 ms, check if elememts in the entry should be deleted --
@@ -133,7 +136,7 @@ generic module RPLDAORoutingEngineP(){
 #endif
       dao = (struct dao_base_t *) dao_msg->s_pkt.ip6_data->iov_base;
 
-      printfUART("RPLDAORouting:>> sendDAO %d %lu \n", TOS_NODE_ID, ++count);
+      //printfUART(">> sendDAO %d %lu \n", TOS_NODE_ID, ++count);
       call IP_DAO.send(&dao_msg->s_pkt);
       call SendPool.put(dao_msg);
 
@@ -185,7 +188,8 @@ generic module RPLDAORoutingEngineP(){
 
   event void GenerateDAOTimer.fired() { // Initiate my own DAO messages
     post initDAO();
-    if(dao_double_count < 10){
+
+    if(dao_double_count < dao_double_limit){
       dao_rate = dao_rate * 2 + call Random.rand16()%100;
       dao_double_count ++;
     }
@@ -267,8 +271,8 @@ generic module RPLDAORoutingEngineP(){
       return;
 
     for (i = 0; i < downwards_table_count; i++) {
-      downwards_table[i].lifetime -= delay_dao;
-      if (downwards_table[i].lifetime <= delay_dao) {
+      downwards_table[i].lifetime -= remove_time;
+      if (downwards_table[i].lifetime <= remove_time) {
         /* SDH : expire the route to this destination */
         call ForwardingTable.delRoute(downwards_table[i].key);
 	for (j = i; j < downwards_table_count-1; j++) {
@@ -289,7 +293,7 @@ generic module RPLDAORoutingEngineP(){
     struct route_entry *entry;
     route_key_t new_key = ROUTE_INVAL_KEY;
 
-    printfUART("RPLDAORouting:receive DAO: %i\n", call RPLDAORouteInfo.getStoreState());
+//     printfUART("RPLDAORouting:receive DAO: %i\n", call RPLDAORouteInfo.getStoreState());
     if (!m_running) return;
 
 #ifndef RPL_STORING_MODE
@@ -319,10 +323,10 @@ generic module RPLDAORoutingEngineP(){
     }else {
       /* new prefix */
       if (downwards_table_count == ROUTE_TABLE_SZ) {
-        printfUART("RPLDAORouting:Downward table full -- not adding route\n");
+//         printfUART("RPLDAORouting:Downward table full -- not adding route\n");
         return;
       }
-      printfUART("RPLDAORouting: Add new route\n");
+//       printfUART("RPLDAORouting: Add new route\n");
       if(dao->target_option.prefix_length > 0){
 	new_key = call ForwardingTable.addRoute(dao->target_option.target_prefix.s6_addr,
 						dao->target_option.prefix_length,

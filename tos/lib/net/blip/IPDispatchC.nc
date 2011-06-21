@@ -65,6 +65,7 @@ configuration IPDispatchC {
 #ifdef LOW_POWER_LISTENING
    IPDispatchP.LowPowerListening -> MessageC;
 #endif
+  MainC.SoftwareInit -> IPDispatchP.Init;
 
   IPDispatchP.PacketLink -> MessageC;
   IPDispatchP.Leds -> LedsC;

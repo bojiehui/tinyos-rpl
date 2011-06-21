@@ -32,10 +32,10 @@ enum {
 };
 
 struct send_info {
-  void   *upper_data;
-  uint8_t link_fragments;
-  uint8_t link_transmissions;
-  bool    failed;
+  void   *upper_data;           /* reference to the data field of IPLower.send */
+  uint8_t link_fragments;       /* how many fragments the packet was split into */
+  uint8_t link_transmissions;   /* how many total link transmissions were required */
+  bool    failed;               /* weather the link reported that the transmission succeed*/
   uint8_t _refcount;
 };
 
@@ -44,5 +44,13 @@ struct send_entry {
   struct ieee154_frame_addr* frame_addr;
   message_t  *msg;
 };
+
+#ifndef BLIP_L2_RETRIES
+#define BLIP_L2_RETRIES 3
+#endif
+
+#ifndef BLIP_L2_DELAY
+#define BLIP_L2_DELAY 103
+#endif
 
 #endif

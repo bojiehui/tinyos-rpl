@@ -1,3 +1,6 @@
+
+#include <iprouting.h>
+
 #include "ppp.h"
 
 configuration PppRouterC {
@@ -21,27 +24,35 @@ configuration PppRouterC {
   PppRouterP.Ipv6LcpAutomaton -> PppIpv6C;
   PppRouterP.PppIpv6 -> PppIpv6C;
 
-  components PlatformSerialHdlcUartC;
-  PppDaemonC.HdlcUart -> PlatformSerialHdlcUartC;
-  PppDaemonC.UartControl -> PlatformSerialHdlcUartC;
+#if defined(PLATFORM_TELOSB) || defined(PLATFORM_EPIC)
+  components PlatformHdlcUartC as HdlcUartC;
+#else
+  components DefaultHdlcUartC as HdlcUartC;
+#endif
+  PppDaemonC.HdlcUart -> HdlcUartC;
+  PppDaemonC.UartControl -> HdlcUartC;
 
-  components PppPrintfC, PppC;;
-  PppPrintfC.Ppp -> PppDaemonC;
-  PppDaemonC.PppProtocol[PppPrintfC.Protocol] -> PppPrintfC;
-  PppPrintfC.Ppp -> PppC;
+  // SDH : don't bother including the PppPrintfC by default
+  // components PppPrintfC, PppC;;
+  // PppPrintfC.Ppp -> PppDaemonC;
+  // PppDaemonC.PppProtocol[PppPrintfC.Protocol] -> PppPrintfC;
+  // PppPrintfC.Ppp -> PppC;
 
-  components IPStackC, IPForwardingEngineP;
+  components IPStackC, IPForwardingEngineP, IPPacketC;
   IPForwardingEngineP.IPForward[ROUTE_IFACE_PPP] -> PppRouterP.IPForward;
   PppRouterP.IPControl -> IPStackC;
   PppRouterP.ForwardingTable -> IPStackC;
+  PppRouterP.IPPacket -> IPPacketC;
 
 #ifdef RPL_ROUTING
-  components RPLRoutingC;
+  components RPLRoutingC, RplBorderRouterP;
   PppRouterP.RootControl -> RPLRoutingC;
+  RplBorderRouterP.ForwardingEvents -> IPStackC.ForwardingEvents[ROUTE_IFACE_PPP];
+  RplBorderRouterP.IPPacket -> IPPacketC;
 #endif
 
   // UDP shell on port 2000
-  // components UDPShellC;
+  components UDPShellC;
 
   // prints the routing table
   // components RouteCmdC;

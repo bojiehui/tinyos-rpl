@@ -36,13 +36,13 @@ module HplSam3uUsart1P{
   
   uses{
     interface HplNVICInterruptCntl as USARTInterrupt1;
-    interface HplSam3uGeneralIOPin as USART_CTS1;
-    interface HplSam3uGeneralIOPin as USART_RTS1;
-    interface HplSam3uGeneralIOPin as USART_RXD1;
-    interface HplSam3uGeneralIOPin as USART_SCK1;
-    interface HplSam3uGeneralIOPin as USART_TXD1;
-    interface HplSam3uPeripheralClockCntl as USARTClockControl1;
-    interface HplSam3uClock as ClockConfig;
+    interface HplSam3GeneralIOPin as USART_CTS1;
+    interface HplSam3GeneralIOPin as USART_RTS1;
+    interface HplSam3GeneralIOPin as USART_RXD1;
+    interface HplSam3GeneralIOPin as USART_SCK1;
+    interface HplSam3GeneralIOPin as USART_TXD1;
+    interface HplSam3PeripheralClockCntl as USARTClockControl1;
+    interface HplSam3Clock as ClockConfig;
     interface FunctionWrapper as Usart1InterruptWrapper;
     interface Leds;
   }
@@ -222,9 +222,6 @@ implementation{
     enableInterruptWrite();
     // enable interrupts here!
 
-
-    call Leds.led1Toggle();
-
     return SUCCESS;
   }
 
@@ -336,21 +333,15 @@ implementation{
     call Usart1InterruptWrapper.preamble();
     disableInterrupt();
 
-    //
     if(/*STATE == S_READ || STATE == S_IDLE*/csr.bits.rxrdy){
       // end reading
       volatile usart_rhr_t *RHR = (volatile usart_rhr_t*) (USART1_BASE_ADDR + 0x18);
       //usart_rhr_t rhr = *RHR;
-
       //recv_data = rhr.bits.rxchr;
       recv_data = RHR->bits.rxchr;
 
-      //if(!CSR->bits.rxrdy)
-      //call Leds.led1Toggle();
-
       signal Usart.readDone((uint8_t) recv_data);
     }
-    //if(){
     else if(STATE == S_WRITE && csr.bits.txrdy){
       // tx is done
       signal Usart.writeDone();
@@ -358,7 +349,6 @@ implementation{
     STATE = S_IDLE;
     enableInterruptRead();
     call Usart1InterruptWrapper.postamble();
-    //call Leds.led2Toggle();
   }
 
   async event void ClockConfig.mainClockChanged() {};

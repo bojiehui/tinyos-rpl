@@ -40,7 +40,7 @@
  * do that; see PPP_MAXIMUM_MRU.
  *
  * It is the developers responsibility to ensure PPP_PREFERRED_MRU <=
- * PPP_MAXIMUM_MRU.
+ * PPP_MAXIMUM_MRU, or to intentionally violate this requirement.
  *
  * @note Linux PPP requires that the negotiated MRU be at least 1280
  * bytes, or it will fail to assign an IPV6 address to the link.
@@ -56,8 +56,8 @@
  * at the HDLC layer.
  *
  * It is the developers responsibility to ensure PPP_PREFERRED_MRU <=
- * PPP_MAXIMUM_MRU */
-#define PPP_MAXIMUM_MRU 768
+ * PPP_MAXIMUM_MRU, or to intentionally violate this requirement. */
+#define PPP_MAXIMUM_MRU PPP_PREFERRED_MRU
 #endif /* PPP_MAXIMUM_MRU */
 
 #ifndef PPP_HDLC_RX_FRAME_LIMIT

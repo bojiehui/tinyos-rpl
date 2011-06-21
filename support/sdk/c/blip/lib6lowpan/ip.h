@@ -35,7 +35,12 @@ extern "C" {
  *
  */
 
-#if ! HAVE_NETINET_IN_H 
+// HAVE_NETINET_IN_H ifdef removed since it is getting defined in libcoap
+// and breaks CoAPBlip
+// only needed for blip1.0 and ip-driver, because those were run on the
+// host computer
+
+#if ! PC
 // update to use netinet/in definition of an IPv6 address; this is a
 //  lot more elegent.
 struct in6_addr
@@ -55,7 +60,7 @@ struct sockaddr_in6 {
   uint16_t       sin6_port;
   struct in6_addr sin6_addr;
 };
-#else 
+#else
 #include <netinet/in.h>
 #endif
 
@@ -123,6 +128,7 @@ enum {
   IANA_UDP = 17,
   IANA_TCP = 6,
 
+
   // IPV6 defined extention header types.  All other next header
   // values are supposed to be transport protocols, with TLVs used
   IPV6_HOP = 0,
@@ -134,6 +140,9 @@ enum {
   IPV6_NONEXT = 59,
   IPV6_DEST = 60,
   IPV6_MOBILITY = 135,
+
+  IPV6_TLV_PAD1 = 0,
+  IPV6_TLV_PADN = 1,
 };
 #define EXTENSION_HEADER(X) ((X) == IPV6_HOP || (X) == IPV6_ROUTING || (X) == IPV6_DEST)
 #define COMPRESSIBLE_TRANSPORT(X) ((X) == IANA_UDP)
@@ -229,17 +238,7 @@ struct ip6_packet {
   struct ip_iovec  *ip6_data;
   struct ip6_hdr ip6_hdr;
 };
-
-struct ip6_packet_headers {
-  // points to the source header within the packed fields, IF it contains one.
-  struct ip6_hdr   *hdr_ip6;
-  struct ip6_ext   *hdr_hop;
-  struct ip6_route *hdr_route;
-  struct ip6_ext   *hdr_dest;
-
-  uint8_t           u_hdr;
-  uint8_t          *u_data;
-};
+#define IP6PKT_TRANSPORT 0xff
 
 #ifndef NO_LIB6LOWPAN_ASCII
 /*
