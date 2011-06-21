@@ -278,7 +278,7 @@ module IPForwardingEngineP {
 
       if (!(signal ForwardingEvents.approve[next_hop_ifindex](&pkt, next_hop)))
         return;
-      printfUART("IPForwardingEngineP: Recv: Forward Packet @ %s\n",sim_time_string());
+//       printfUART("IPForwardingEngineP: Recv: Forward Packet @ %s\n",sim_time_string());
       call IPForward.send[next_hop_ifindex](next_hop, &pkt, (void *)next_hop_key);
     }
   }

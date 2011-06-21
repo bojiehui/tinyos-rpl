@@ -23,11 +23,14 @@ PFLAGS += -DRPL_ROUTING -DRPL_STORING_MODE -I$(TOSDIR)/lib/net/rpl
 # CFLAGS += -DREPORT_DEST=\"fe80::22:ff:fe00:1\"
 # CFLAGS += -DREPORT_DEST=\"fec0::1\"
 
+#For simulation
+CFLAGS += -DBASESTATION_ID=1
+
 # if you're using DHCP, set this to try and derive a 16-bit address
 # from the IA received from the server.  This will work if the server
 # gives out addresses from a /112 prefix.  If this is not set, blip
 # will only use EUI64-based link addresses.
-# PFLAGS += -DBLIP_DERIVE_SHORTADDRS
+PFLAGS += -DBLIP_DERIVE_SHORTADDRS
 
 # this disables dhcp and statically chooses a prefix.  the motes form
 # their ipv6 address by combining this with TOS_NODE_ID
