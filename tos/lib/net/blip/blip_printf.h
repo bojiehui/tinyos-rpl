@@ -45,11 +45,22 @@ void printf_in6addr(struct in6_addr *a) {
 
 
 #else  /* PRINTFUART_ENABLED */
+
+
+#ifdef TOSSIM
+#warning "TOSSIM printf"
+#define printf(X, args...) dbg("IPForwardingEngine", X,## args);
+#define printfflush();
+#define printf_in6addr(X) {static char print_buf[64];inet_ntop6(X, print_buf, 64);dbg_clear("IPForwardingEngine",print_buf);};
+#define printf_buf(buf, len) ;
+#define iov_print(iov) ;
+#else
 #define printf(fmt, args ...) ;
 #define printfflush() ;
 #define printf_in6addr(a) ;
 #define printf_buf(buf, len) ;
 #define iov_print(iov) ;
+#endif
 
 #if defined (_H_msp430hardware_h) || defined (_H_atmega128hardware_H)
   #include <stdio.h>

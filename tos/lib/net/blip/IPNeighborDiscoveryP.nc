@@ -29,15 +29,6 @@ module IPNeighborDiscoveryP {
   }
 } implementation {
 
-  //#undef printfUART
-#undef printfUART_buf
-#undef printfUART_in6addr
-  //#define printfUART(FMT, args ...)
-#define printfUART_buf(buf, len)
-#define printfUART_in6addr(X)
-
-#define printfUART(X, args...) dbg("IPND", X, ## args)
-
   command int NeighborDiscovery.matchContext(struct in6_addr *addr, 
                                              uint8_t *ctx) {
     struct in6_addr me;
@@ -131,12 +122,12 @@ module IPNeighborDiscoveryP {
   }
 
   event void IPLower.recv(struct ip6_hdr *iph, void *payload, struct ip6_metadata *meta) {
-    printfUART("IPND: Receive @ %s\n", sim_time_string());
+    printf("IPND: Receive @ %s\n", sim_time_string());
     signal IPForward.recv(iph, payload, meta);
   }
 
   event void IPLower.sendDone(struct send_info *status) {
-    printfUART("IPND: Send Done @ %s\n", sim_time_string());
+    printf("IPND: Send Done @ %s\n", sim_time_string());
     signal IPForward.sendDone(status);
   }
 

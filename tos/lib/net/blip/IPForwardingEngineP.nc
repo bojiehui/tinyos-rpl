@@ -29,7 +29,7 @@ module IPForwardingEngineP {
     interface IPAddress;
     interface IPPacket;
 
-#ifdef PRINTFUART_ENABLED
+#if defined PRINTFUART_ENABLED  || defined (TOSSIM)
     interface Timer<TMilli> as PrintTimer;
 #endif
     interface Leds;
@@ -172,8 +172,8 @@ module IPForwardingEngineP {
 
     struct route_entry *next_hop_entry = 
       call ForwardingTable.lookupRoute(pkt->ip6_hdr.ip6_dst.s6_addr, 128);
-    
-#ifdef PRINTFUART_ENABLED
+
+#if defined (PRINTFUART_ENABLED) || defined (TOSSIM)
     if (!call PrintTimer.isRunning())
       call PrintTimer.startPeriodic(10000);
 #endif
@@ -297,7 +297,7 @@ module IPForwardingEngineP {
     }
   }
 
-#ifdef PRINTFUART_ENABLED
+#if defined (PRINTFUART_ENABLED)  || defined (TOSSIM)
   event void PrintTimer.fired() {
     int i;
 

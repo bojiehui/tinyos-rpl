@@ -89,7 +89,7 @@ configuration IPStackC {
   components Dhcp6ClientC;
 #endif
 
-#ifdef PRINTFUART_ENABLED
+#if defined PRINTFUART_ENABLED  || defined (TOSSIM)
   components new TimerMilliC();
   FwdP.PrintTimer -> TimerMilliC;
 #endif
