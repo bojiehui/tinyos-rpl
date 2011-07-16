@@ -52,7 +52,6 @@ configuration CoapBlipC {
   CoapBlipP.Init <- MainC.SoftwareInit;
   CoapBlipP.ForwardingTableEvents -> IPStackC.ForwardingTableEvents;
 
-
 #ifdef RPL_ROUTING
   components RPLRoutingC;
 #endif
@@ -64,6 +63,7 @@ configuration CoapBlipC {
   CoapUdpServerC.LibCoapServer -> LibCoapAdapterC.LibCoapServer;
   CoapUdpServerC.Init <- MainC.SoftwareInit;
   LibCoapAdapterC.UDPServer -> UdpServerSocket;
+
 
 #if defined (COAP_RESOURCE_TEMP)  || defined (COAP_RESOURCE_HUM) || defined (COAP_RESOURCE_ALL)
   components new SensirionSht11C() as HumTempSensor;
@@ -133,7 +133,6 @@ configuration CoapBlipC {
   CoapReadRouteResource.ForwardingTable -> IPStackC;
   CoapUdpServerC.ReadResource[KEY_ROUTE] -> CoapReadRouteResource.ReadResource;
 #endif
-  
 #endif
 
 #ifdef COAP_CLIENT_ENABLED

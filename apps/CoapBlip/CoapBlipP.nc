@@ -42,6 +42,7 @@ module CoapBlipP {
   uses {
     interface Boot;
     interface SplitControl as RadioControl;
+    interface ForwardingTableEvents;
 #ifdef COAP_SERVER_ENABLED
     interface CoAPServer;
 #ifdef COAP_RESOURCE_KEY
@@ -109,7 +110,7 @@ module CoapBlipP {
   event void RadioControl.stopDone(error_t e) {
   }
 
-#ifdef COAP_CLIENT_ENABLED
+
   event void ForwardingTableEvents.defaultRouteAdded() {
 #ifdef COAP_CLIENT_ENABLED
     inet_pton6(COAP_CLIENT_DEST, &sa6.sin6_addr);
@@ -138,8 +139,8 @@ module CoapBlipP {
 #endif
 
   event void ForwardingTableEvents.defaultRouteRemoved() {
+    call Leds.led2Off();
   }
-
 
 #ifdef COAP_CLIENT_ENABLED
   event void CoAPClient.request_done() {
