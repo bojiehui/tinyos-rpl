@@ -125,6 +125,13 @@ configuration CoapBlipC {
   CoapUdpServerC.ReadResource[KEY_KEY]  -> CoapFlashResource.ReadResource;
   CoapUdpServerC.WriteResource[KEY_KEY] -> CoapFlashResource.WriteResource;
 #endif
+
+#ifdef COAP_RESOURCE_ROUTE
+  components new CoapRouteResourceC(uint32_t, KEY_ROUTE) as CoapReadRouteResource;
+  CoapReadRouteResource.ForwardingTable -> IPStackC;
+  CoapUdpServerC.ReadResource[KEY_ROUTE] -> CoapReadRouteResource.ReadResource;
+#endif
+  
 #endif
 
 #ifdef COAP_CLIENT_ENABLED
