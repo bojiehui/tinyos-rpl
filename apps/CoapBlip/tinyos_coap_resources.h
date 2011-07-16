@@ -124,7 +124,7 @@ key_uri_t uri_key_map[NUM_URIS] = {
       COAP_MEDIATYPE_APPLICATION_OCTET_STREAM, 0, 1, 0},
 #endif
 #ifdef COAP_RESOURCE_ROUTE
-    { KEY_ROUTE,  "route",  sizeof("route") ,
+    { KEY_ROUTE,  "rt",  sizeof("rt") ,
       COAP_MEDIATYPE_APPLICATION_OCTET_STREAM, 0, 1, 0},
 #endif
 };

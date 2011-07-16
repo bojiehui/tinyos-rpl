@@ -326,8 +326,8 @@ message_handler( coap_context_t  *ctx, coap_queue_t *node, void *data) {
       } else {
 	  printf("** LED'S set\n");
 	}
-      } else if (strstr(uri.path.s, "o")) {
-          printf("** Route: %s\n", node->pdu->data);
+      } else if (strstr(uri.path.s, "rt")) {
+          printf("** Route:\ndestination\t\tgateway\t\tiface\n %s\n", node->pdu->data);
       } else if (strstr(uri.path.s, "r")) {
 	val_all val = char_to_val_all(node->pdu->data);
 	printf("\n** All values: \n");
