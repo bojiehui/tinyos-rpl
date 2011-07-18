@@ -51,14 +51,20 @@ module CoapBlipP {
 #endif
 #ifdef COAP_CLIENT_ENABLED
     interface CoAPClient;
-//     interface ForwardingTableEvents;
+#ifdef COAP_CLIENT_SEND_RI
+    interface Timer<TMilli> as Timer;
+    interface ReadResource[uint8_t uri];
+#endif
 #endif
     interface Leds;
   }
   provides interface Init;
 } implementation {
 #ifdef COAP_CLIENT_ENABLED
+  struct sockaddr_in6 sa6;
   uint8_t node_integrate_done = FALSE;
+  coap_list_t *optlist = NULL;
+
 #endif
 
   command error_t Init.init() {
@@ -106,32 +112,63 @@ module CoapBlipP {
 
 
   event void ForwardingTableEvents.defaultRouteAdded() {
-#ifdef COAP_CLIENT_ENABLED     
-    struct sockaddr_in6 sa6;
-    coap_list_t *optlist = NULL;
-    
+#ifdef COAP_CLIENT_ENABLED
+    inet_pton6(COAP_CLIENT_DEST, &sa6.sin6_addr);
+    sa6.sin6_port = htons(COAP_CLIENT_PORT);
+#ifdef COAP_CLIENT_SEND_NI
     if (node_integrate_done == FALSE) {
       node_integrate_done = TRUE;
-
-      inet_pton6(COAP_CLIENT_DEST, &sa6.sin6_addr);
-      sa6.sin6_port = htons(COAP_CLIENT_PORT);
-
       coap_insert( &optlist, new_option_node(COAP_OPTION_URI_PATH, sizeof("ni") - 1, "ni"), order_opts);
 
-      call CoAPClient.request(&sa6, COAP_REQUEST_PUT, optlist);
+      call CoAPClient.request(&sa6, COAP_REQUEST_PUT, optlist, NULL, 0);
     }
 #endif
-    call Leds.led2On();    
+#ifdef COAP_CLIENT_SEND_RI
+    optlist = NULL;
+    coap_insert( &optlist, new_option_node(COAP_OPTION_URI_PATH, sizeof("ri") - 1, "ri"), order_opts);
+    call Timer.startOneShot(1024);
+#endif
+#endif
+    call Leds.led2On();
   }
+
+#if defined (COAP_CLIENT_ENABLED) && defined (COAP_CLIENT_SEND_RI)
+  event void Timer.fired() {
+    call ReadResource.get[KEY_ROUTE_CLIENT](0);
+  }
+#endif
 
   event void ForwardingTableEvents.defaultRouteRemoved() {
     call Leds.led2Off();
   }
-  
-#ifdef COAP_CLIENT_ENABLED   
+
+#ifdef COAP_CLIENT_ENABLED
   event void CoAPClient.request_done() {
     //TODO: handle the request_done
   };
+#ifdef  COAP_CLIENT_SEND_RI
+  event void ReadResource.getDone[uint8_t uri_key](error_t result,
+						   coap_tid_t id,
+						   uint8_t asyn_message,
+						   uint8_t* val_buf,
+						   uint8_t buflen) {
+
+    if (result == SUCCESS) {
+      call Leds.led0Toggle();
+      call CoAPClient.request(&sa6, COAP_REQUEST_PUT, optlist, val_buf, buflen);
+    }
+
+    call Timer.startPeriodic(1024 * COAP_CLIENT_SEND_RI_INTERVAL);
+  }
+
+ default command error_t ReadResource.get[uint8_t uri_key](coap_tid_t id) {
+   //printf("** coap: default (get not available for this resource)....... %i\n", uri_key);
+   call Leds.led2Toggle();
+   return FAIL;
+ }
+ event void ReadResource.getDoneDeferred[uint8_t uri_key](coap_tid_t id) {
+ }
+#endif
 #endif
 
   }

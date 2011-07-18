@@ -51,7 +51,7 @@ configuration CoapBlipC {
   CoapBlipP.RadioControl ->  IPStackC;
   CoapBlipP.Init <- MainC.SoftwareInit;
   CoapBlipP.ForwardingTableEvents -> IPStackC.ForwardingTableEvents;
-  
+
 #ifdef RPL_ROUTING
   components RPLRoutingC;
 #endif
@@ -129,7 +129,7 @@ configuration CoapBlipC {
 #endif
 
 #ifdef COAP_RESOURCE_ROUTE
-  components new CoapRouteResourceC(uint32_t, KEY_ROUTE) as CoapReadRouteResource;
+  components new CoapRouteResourceC(uint16_t, KEY_ROUTE) as CoapReadRouteResource;
   CoapReadRouteResource.ForwardingTable -> IPStackC;
   CoapUdpServerC.ReadResource[KEY_ROUTE] -> CoapReadRouteResource.ReadResource;
 #endif
@@ -138,15 +138,20 @@ configuration CoapBlipC {
 #ifdef COAP_CLIENT_ENABLED
   components CoapUdpClientC;
   components new UdpSocketC() as UdpClientSocket;
+#ifdef COAP_CLIENT_SEND_RI
+  components new CoapRouteResourceC(uint16_t, KEY_ROUTE_CLIENT) as CoapClientReadRouteResource;  CoapBlipP.ReadResource[KEY_ROUTE_CLIENT] -> CoapClientReadRouteResource.ReadResource;
+  components new TimerMilliC();
+  CoapClientReadRouteResource.ForwardingTable -> IPStackC;
+  CoapBlipP.Timer -> TimerMilliC;
+#endif
   CoapBlipP.CoAPClient -> CoapUdpClientC;
   CoapUdpClientC.LibCoapClient -> LibCoapAdapterC.LibCoapClient;
   CoapUdpClientC.Init <- MainC.SoftwareInit;
   LibCoapAdapterC.UDPClient -> UdpClientSocket;
-//   CoapBlipP.ForwardingTableEvents -> IPStackC.ForwardingTableEvents;
 #endif
 
 #ifdef PRINTFUART_ENABLED
-    components PrintfC;
-    components SerialStartC;
+  components PrintfC;
+  components SerialStartC;
 #endif
   }
