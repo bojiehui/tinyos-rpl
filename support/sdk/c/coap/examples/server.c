@@ -622,7 +622,12 @@ message_handler(coap_context_t  *ctx, coap_queue_t *node, void *data) {
     debug("message_handler: error sending reponse");
     coap_delete_pdu(pdu);
   }
-
+  
+  coap_uri_t uri;
+  coap_get_request_uri( node->pdu, &uri );
+  if (strstr(uri.path.s, "ri") ) {
+    printf("** Route:\ndestination\t\tgateway\t\tiface\n %s\n", node->pdu->data);
+  }
 }
 
 void 
@@ -1045,6 +1050,18 @@ resource_ni(coap_uri_t *uri,
   *finished = 1;
   return COAP_RESPONSE_200;
 }
+
+int
+resource_ri(coap_uri_t *uri,
+	    unsigned char *mediatype, unsigned int offset,
+	    unsigned char *buf, unsigned int *buflen,
+	    int *finished) {
+  *finished = 1;
+
+  printf("** Route:\ndestination\t\tgateway\t\tiface\n %s\n", buf);
+  return COAP_RESPONSE_200;
+}
+
 #define RESOURCE_SET_URI(r,st) \
   (r)->uri = coap_new_uri((const unsigned char *)(st), strlen(st));
 
@@ -1067,6 +1084,8 @@ init_resources(coap_context_t *ctx) {
   static const char *d_data = "POSTed data is stored here";
   static const char *u_ni = "/ni";
   static const char *d_ni = "node integrate";
+  static const char *u_ri = "/ri";
+  static const char *d_ri = "route information";
   coap_resource_t *r;
 
   if ( !(r = coap_malloc( sizeof(coap_resource_t) ))) 
@@ -1142,6 +1161,19 @@ init_resources(coap_context_t *ctx) {
   r->dirty = 0;
   r->writable = 1;
   r->data = resource_ni;
+  r->maxage = 10;
+  coap_add_resource(ctx, r);
+  
+  if ( !(r = coap_malloc( sizeof(coap_resource_t) )))
+    return;
+
+  memset(r, 0, sizeof(coap_resource_t));
+  RESOURCE_SET_URI(r,u_ri);
+  RESOURCE_SET_DESC(r,d_ri);
+  r->mediatype = COAP_MEDIATYPE_ANY;
+  r->dirty = 0;
+  r->writable = 1;
+  r->data = resource_ri;
   r->maxage = 10;
   coap_add_resource(ctx, r);
 }
