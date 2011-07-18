@@ -35,7 +35,7 @@ interface CoAPClient {
   /*
    * bind a local address.
    */
-  command error_t request(struct sockaddr_in6 *dest, method_t method, coap_list_t *optlist);
+  command error_t request(struct sockaddr_in6 *dest, method_t method, coap_list_t *optlist, uint8_t *buf, uint8_t buflen);
 
   /*
    *

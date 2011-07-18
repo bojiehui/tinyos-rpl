@@ -61,8 +61,10 @@ generic module CoapRouteResourceP(typedef val_t, uint8_t uri_key) {
     cur = buf;
 
     entry = call ForwardingTable.getTable(&n);
-    if (!buf || !entry)
+    if (!buf || !entry) {
+      //       signal ReadResource.getDone(FAIL, id_t, 0, (uint8_t*)buf, cur - buf);
       return;
+    }
 
     for (;cur_entry < n; cur_entry++) {
       if (entry[cur_entry].valid) {
@@ -90,4 +92,4 @@ generic module CoapRouteResourceP(typedef val_t, uint8_t uri_key) {
     post getRoute();
     return SUCCESS;
   }
-}
+  }

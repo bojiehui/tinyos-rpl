@@ -3,7 +3,7 @@ COMPONENT=CoapBlipC
 # uncomment this for network programming support
 # BOOTLOADER=tosboot
 
-# CFLAGS += -DCC2420_DEF_CHANNEL=22
+CFLAGS += -DCC2420_DEF_CHANNEL=22
 #CFLAGS += -DRF230_DEF_CHANNEL=16
 # CFLAGS += -DCC2420_DEF_RFPOWER=3
 
@@ -38,13 +38,13 @@ CFLAGS += -DCOAP_SERVER_PORT=61616L
 CFLAGS += -DMAX_URI_LENGTH=5
 # set available resources.
 # Don't forget to change CFLAG: NUM_URIS!!!!!
-CFLAGS += -DNUM_URIS=1
+CFLAGS += -DNUM_URIS=4
 # CFLAGS += -DCOAP_RESOURCE_TEMP
-# CFLAGS += -DCOAP_RESOURCE_HUM
+CFLAGS += -DCOAP_RESOURCE_HUM
 # CFLAGS += -DCOAP_RESOURCE_VOLT
 # CFLAGS += -DCOAP_RESOURCE_KEY
-# CFLAGS += -DCOAP_RESOURCE_LED
-# CFLAGS += -DCOAP_RESOURCE_ALL 
+CFLAGS += -DCOAP_RESOURCE_LED
+CFLAGS += -DCOAP_RESOURCE_ALL 
 CFLAGS += -DCOAP_RESOURCE_ROUTE
 
 ################ CoAP Client ################################
@@ -53,6 +53,11 @@ CFLAGS += -DCOAP_CLIENT_ENABLED
 CFLAGS += -DCOAP_CLIENT_PORT=61616L
 # client IPv6 destination address
 CFLAGS += -DCOAP_CLIENT_DEST=\"fec0::100\"
+# choose ONE resource to be sent after startup
+# send /ni (node integrate) after startup
+CFLAGS += -DCOAP_CLIENT_SEND_NI
+# send /ri (routing information) after startup in specified interval (seconds)
+CFLAGS += -DCOAP_CLIENT_SEND_RI -DCOAP_CLIENT_SEND_RI_INTERVAL=5
 
 CFLAGS += -I.
 include $(MAKERULES)
