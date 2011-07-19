@@ -6,8 +6,8 @@ PLATFORM ?= telosb
 #MSP_MCU = msp430x1611
 
 # Disable MSP430 hardware multiply because it makes MSPGCC die
-#PFLAGS += -mdisable-hwmul
-PFLAGS += -mmpy=none
+PFLAGS += -mdisable-hwmul
+#PFLAGS += -mmpy=none
 #OPTFLAGS += -O
 
 MSP_BSL ?= tos-bsl
