@@ -49,4 +49,4 @@ generic module CoapBufferTempTranslateP() {
     printf( "CoapBufferTempTranslateP.readDone: %hu \n", val);
     signal ReadTemp.readDone(result, val);
   }
-}
+  }

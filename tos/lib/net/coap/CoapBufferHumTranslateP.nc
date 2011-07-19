@@ -49,4 +49,4 @@ generic module CoapBufferHumTranslateP() {
     printf("CoapRead.readDone: %hu\n", val);
     signal ReadHum.readDone(result, val);
   }
-}
+  }
