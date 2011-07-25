@@ -29,8 +29,9 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
  * OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-
+#ifdef COAP_RESOURCE_KEY
 #include "StorageVolumes.h"
+#endif
 #include <lib6lowpan/6lowpan.h>
 #include "tinyos_coap_resources.h"
 

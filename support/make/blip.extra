@@ -1,6 +1,6 @@
 # -*- makefile -*-
 
-PFLAGS += -DCC2420_HW_ACKNOWLEDGEMENTS 
+PFLAGS += -DCC2420_HW_ACKNOWLEDGEMENTS
 PFLAGS += -DCC2420_HW_ADDRESS_RECOGNITION
 PFLAGS += -DPACKET_LINK -DBLIP_L2_RETRIES=3
 
@@ -18,7 +18,7 @@ PFLAGS+=-I$(TOSDIR)/lib/net/
 PFLAGS+=-I$(TOSDIR)/lib/printf/
 PFLAGS+=-I$(LOWPAN_ROOT)/support/sdk/c/blip/
 PFLAGS+=-I$(LOWPAN_ROOT)/tos/lib/net/blip/
-PFLAGS+=-I$(LOWPAN_ROOT)/tos/lib/net/blip/interfaces/ 
+PFLAGS+=-I$(LOWPAN_ROOT)/tos/lib/net/blip/interfaces/
 PFLAGS+=-I$(LOWPAN_ROOT)/tos/lib/net/blip/nwprog/
 PFLAGS+=-I$(LOWPAN_ROOT)/tos/lib/net/blip/shell/
 PFLAGS+=-I$(LOWPAN_ROOT)/tos/lib/net/blip/serial/
@@ -28,6 +28,7 @@ PFLAGS+=-I$(LOWPAN_ROOT)/tos/lib/net/blip/dhcp/
 
 ifneq ($(filter sim,$(GOALS)),sim)
 ifneq ($(filter sim-rpl,$(GOALS)),sim-rpl)
+ifneq ($(filter sim-rpl-coap,$(GOALS)),sim-rpl-coap)
 ifneq ($(filter sim-ipdriver,$(GOALS)),sim-ipdriver)
 //PFLAGS+=$(LOWPAN_ROOT)/support/sdk/c/blip/lib6lowpan/lib6lowpan.c
 //PFLAGS+=$(LOWPAN_ROOT)/support/sdk/c/blip/lib6lowpan/lib6lowpan_4944.c
@@ -37,6 +38,7 @@ PFLAGS+=$(LOWPAN_ROOT)/support/sdk/c/blip/lib6lowpan/in_cksum.c
 PFLAGS+=$(LOWPAN_ROOT)/support/sdk/c/blip/lib6lowpan/ip_malloc.c
 PFLAGS+=$(LOWPAN_ROOT)/support/sdk/c/blip/lib6lowpan/utility.c
 PFLAGS+=$(LOWPAN_ROOT)/tos/lib/net/blip/table.c
+endif
 endif
 endif
 endif

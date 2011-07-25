@@ -1,0 +1,164 @@
+#-*-Makefile-*- vim:syntax=make
+#$Id: sim.extra,v 1.14 2009-11-14 02:14:18 razvanm Exp $
+
+BLIP_DIR=$(TOSDIR)/lib/net/blip
+TYPES_DIR=$(TOSDIR)/types
+LIB6LOWPAN_DIR=$(TOSROOT)/support/sdk/c/blip/lib6lowpan/
+COAP_DIR=$(TOSDIR)/lib/net/coap/
+COAP_SUPPORT_DIR=$(TOSROOT)/support/sdk/c/coap/
+LIB6LOWPAN_DIR2=$(TOSROOT)/support/sdk/c/blip/
+
+export GCC=gcc
+GPP=g++
+OPTFLAGS = -g -O0
+LIBS = -lm -lstdc++
+PFLAGS += -tossim -fnesc-nido-tosnodes=1000 -fnesc-simulate -fnesc-nido-motenumber=sim_node\(\) -fnesc-gcc=$(GCC)
+WFLAGS = -Wno-nesc-data-race
+PYTHON_VERSION ?= $(shell python --version 2>&1 | sed 's/Python 2\.\([0-9]\)\.\([0-9]*\).*/2.\1/')
+BUILDDIR   = simbuild/$(PLATFORM)
+CFILE    = $(BUILDDIR)/sim.c
+OBJFILE    = $(BUILDDIR)/sim.o
+
+#Fix from old blip
+TABLEFILE       = $(TOSROOT)/tos/lib/net/blip/table.c
+TABLEOBJFILE    = $(BUILDDIR)/table.o
+CKSUMFILE       = $(TOSROOT)/support/sdk/c/blip/lib6lowpan/in_cksum.c
+CKSUMOBJFILE    = $(TOSROOT)/support/sdk/c/blip/lib6lowpan/in_cksum.o
+IPMALLOCFILE    = $(TOSROOT)/support/sdk/c/blip/lib6lowpan/ip_malloc.c
+IPMALLOCOBJFILE = $(TOSROOT)/support/sdk/c/blip/lib6lowpan/ip_malloc.o
+NWBYTESIMFILE    = ./nwbyte_sim.c
+NWBYTESIMOBJFILE = $(BUILDDIR)/nwbyte_sim.o
+
+LIB6LOWPAN_OBJFILE         	     = $(TOSROOT)/support/sdk/c/blip/lib6lowpan/lib6lowpan.o
+LIB6LOWPAN_4944_OBJFILE    	     = $(TOSROOT)/support/sdk/c/blip/lib6lowpan/lib6lowpan_4944.o
+LIB6LOWPAN_FRAG_OBJFILE    	     = $(TOSROOT)/support/sdk/c/blip/lib6lowpan/lib6lowpan_frag.o
+LIB6LOWPAN_IOVEC_OBJFILE   	     = $(TOSROOT)/support/sdk/c/blip/lib6lowpan/iovec.o
+LIB6LOWPAN_IEEE154_HEADER_OBJFILE    = $(TOSROOT)/support/sdk/c/blip/lib6lowpan/ieee154_header.o
+LIB6LOWPAN_UTILITY_OBJFILE           = $(TOSROOT)/support/sdk/c/blip/lib6lowpan/utility.o
+LIB6LOWPAN_COMPRESS_OBJFILE          = $(TOSROOT)/support/sdk/c/blip/lib6lowpan/trace/compress.o
+
+#coap
+PFLAGS += -DBIG_ENDIAN=4321
+PFLAGS += -DLITTLE_ENDIAN=1234
+PFLAGS += -DBYTE_ORDER=LITTLE_ENDIAN
+#PFLAGS += -DBYTE_ORDER=BIG_ENDIAN
+PFLAGS += -DNDEBUG=1
+PFLAGS+=-I$(TOSROOT)/tos/lib/net/coap/
+PFLAGS+=-I$(TOSROOT)/tos/lib/app/coap/interfaces/
+PFLAGS+=-I$(TOSROOT)/support/sdk/c/coap
+
+#libcoap files
+COAP_TINYOSNET_FILE         	     = $(TOSROOT)/tos/lib/net/coap/tinyos_net.c
+COAP_TINYOSNET_OBJFILE         	     = $(BUILDDIR)/tinyos_net.o
+COAP_NET_FILE         	    	     = $(TOSROOT)/support/sdk/c/coap/net.c
+COAP_NET_OBJFILE         	     = $(BUILDDIR)/net.o
+COAP_SUBSCRIBE_FILE         	     = $(TOSROOT)/support/sdk/c/coap/subscribe.c
+COAP_SUBSCRIBE_OBJFILE         	     = $(BUILDDIR)/subscribe.o
+COAP_ENCODE_FILE		     = $(TOSROOT)/support/sdk/c/coap/encode.c
+COAP_ENCODE_OBJFILE         	     = $(BUILDDIR)/encode.o
+COAP_LIST_FILE			     = $(TOSROOT)/support/sdk/c/coap/list.c
+COAP_LIST_OBJFILE         	     = $(BUILDDIR)/list.o
+COAP_PDU_FILE			     = $(TOSROOT)/support/sdk/c/coap/pdu.c
+COAP_PDU_OBJFILE         	     = $(BUILDDIR)/pdu.o
+COAP_STR_FILE			     = $(TOSROOT)/support/sdk/c/coap/str.c
+COAP_STR_OBJFILE         	     = $(BUILDDIR)/str.o
+COAP_URI_FILE			     = $(TOSROOT)/support/sdk/c/coap/uri.c
+COAP_URI_OBJFILE         	     = $(BUILDDIR)/uri.o
+CLIBFLAGS:=-Wall -g -O2
+TOSSIMFLAG += -DTOSSIM
+NDEBUGFLAG += -DNDEBUG=1
+
+PPPBASEFLAGS = -I$(TOSROOT)/apps/PppRouter/
+
+CXXFILE    = $(TOSDIR)/lib/tossim/tossim.c
+CXXOBJFILE = $(BUILDDIR)/tossim.o
+HASHFILE    = $(TOSDIR)/lib/tossim/hashtable.c
+HASHOBJFILE = $(BUILDDIR)/c-support.o
+PYFILE     = $(TOSDIR)/lib/tossim/tossim_wrap.cxx
+PYOBJFILE  = $(BUILDDIR)/pytossim.o
+PYDIR      = $(shell python$(PYTHON_VERSION)-config --prefix)/include/python$(PYTHON_VERSION)
+SIMDIR     =$(TOSDIR)/lib/tossim
+XML        = app.xml
+DUMPTYPES = -fnesc-dump=components -fnesc-dump=variables -fnesc-dump=constants -fnesc-dump=typedefs -fnesc-dump=interfacedefs -fnesc-dump=tags
+
+ifeq ($(findstring cygwin, $(OSTYPE)),cygwin)
+  PLATFORM_FLAGS=-DUSE_DL_IMPORT -fpic
+  SHARED_OBJECT=_TOSSIM.dll
+  PLATFORM_BUILD_FLAGS= -fpic -W1,--enabled-auto-image-base
+  PLATFORM_LIB_FLAGS = -L/usr/lib/python$(PYTHON_VERSION)/config -L/$(PYDIR)/config -lstdc++ -lpython$(PYTHON_VERSION)
+else
+ifeq ($(OS), Windows_NT) # Some TinyOS installs are like this
+  PLATFORM_FLAGS=-DUSE_DL_IMPORT -fpic
+  SHARED_OBJECT=_TOSSIM.dll
+  PLATFORM_BUILD_FLAGS= -fpic -W1,--enabled-auto-image-base
+  PLATFORM_LIB_FLAGS =-shared -L/usr/lib/python$(PYTHON_VERSION)/config -L/$(PYDIR)/config -lstdc++ -lpython$(PYTHON_VERSION)
+else
+ifeq ($(findstring darwin, $(OSTYPE)), darwin)
+  SIM_DARWIN=TRUE
+else
+ifeq ($(findstring Darwin, $(shell uname)), Darwin)
+  SIM_DARWIN = TRUE
+else # linux
+  PLATFORM_FLAGS=-shared -fPIC
+  SHARED_OBJECT=_TOSSIMmodule.so
+  PLATFORM_LIB_FLAGS = -lstdc++
+  PLATFORM_BUILD_FLAGS= -shared -fPIC
+endif
+endif
+endif
+endif
+ifdef SIM_DARWIN
+  PLATFORM_FLAGS=-fPIC -D_FORTIFY_SOURCE=0
+  PLATFORM_CC_FLAGS=-bundle
+  SHARED_OBJECT=_TOSSIMmodule.so
+  PLATFORM_BUILD_FLAGS=-flat_namespace -undefined suppress
+  PLATFORM_LIB_FLAGS = -lstdc++
+endif
+
+BUILD_DEPS = sim-exe
+
+# lib/tossim has to come at the end in order to ensure basic TOSSIM
+# implementations are the last resort, so put it directly in the call
+
+sim-exe: builddir $(BUILD_EXTRA_DEPS) FORCE
+	@echo "  placing object files in $(BUILDDIR)"
+	@echo "  writing XML schema to $(XML)"
+	@echo " compiling table"
+	$(GPP) -c $(PLATFORM_CC_FLAGS) $(PLATFORM_FLAGS) -o $(TABLEOBJFILE) $(OPTFLAGS) $(CFLAGS) $(TOSSIM_CFLAG) $(SIM_CFLAGS) -I$(PYDIR) -I$(SIMDIR) $(TABLEFILE)
+	@echo " compiling cksum"
+	$(GPP) -c $(PLATFORM_CC_FLAGS) $(PLATFORM_FLAGS) -o $(CKSUMOBJFILE) $(OPTFLAGS) $(CFLAGS) $(TOSSIM_CFLAG) $(SIM_CFLAGS) -I$(PYDIR) -I$(SIMDIR) -I$(TYPES_DIR) $(CKSUMFILE)
+	@echo " compiling ipmalloc"
+	$(GPP) -c $(PLATFORM_CC_FLAGS) $(PLATFORM_FLAGS) -o $(IPMALLOCOBJFILE) $(OPTFLAGS) $(CFLAGS) $(TOSSIM_CFLAG) $(SIM_CFLAGS) -I$(PYDIR) -I$(SIMDIR) -I$(LIB6LOWPAN_DIR) $(IPMALLOCFILE)
+	@echo " compiling nwbyte_sim"
+	$(GPP) -c $(PLATFORM_CC_FLAGS) $(PLATFORM_FLAGS) -o $(NWBYTESIMOBJFILE) $(OPTFLAGS) $(CFLAGS) $(NWBYTESIMFILE) -I$(PYDIR) -I$(SIMDIR)
+	@echo " compiling tinyos_net"
+	$(GCC) -c $(PLATFORM_CC_FLAGS) $(PLATFORM_FLAGS) -o $(COAP_TINYOSNET_OBJFILE) $(OPTFLAGS) $(TOSSIMFLAG) $(NDEBUGFLAG) $(CFLAGS) $(COAP_TINYOSNET_FILE) -I$(COAP_DIR) -I$(COAP_SUPPORT_DIR) -I$(LIB6LOWPAN_DIR2) -I$(TYPES_DIR)
+	@echo " compiling net.o"
+	$(GCC) -c -o $(COAP_NET_OBJFILE) $(CLIBFLAGS) $(COAP_NET_FILE) $(CFLAGS) $(TOSSIMFLAG) $(NDEBUGFLAG) -I$(LIB6LOWPAN_DIR2) -I$(LIB6LOWPAN_DIR) -I$(PYDIR) -I$(SIMDIR) -I$(TYPES_DIR)
+	@echo " compiling subscribe.o"
+	$(GCC) -c -o $(COAP_SUBSCRIBE_OBJFILE) $(CLIBFLAGS) $(COAP_SUBSCRIBE_FILE) $(CFLAGS) $(TOSSIMFLAG) $(NDEBUGFLAG) -I$(LIB6LOWPAN_DIR2) -I$(LIB6LOWPAN_DIR) -I$(PYDIR) -I$(SIMDIR) -I$(TYPES_DIR)
+	@echo " compiling encode.o"
+	$(GCC) -c -o $(COAP_ENCODE_OBJFILE) $(CLIBFLAGS) $(COAP_ENCODE_FILE) $(TOSSIMFLAG) $(NDEBUGFLAG) -I$(LIB6LOWPAN_DIR2) -I$(LIB6LOWPAN_DIR) -I$(PYDIR) -I$(SIMDIR) -I$(TYPES_DIR)
+	@echo " compiling list.o"
+	$(GCC) -c -o $(COAP_LIST_OBJFILE) $(CLIBFLAGS) $(COAP_LIST_FILE) $(TOSSIMFLAG) $(NDEBUGFLAG) -I$(LIB6LOWPAN_DIR2) -I$(LIB6LOWPAN_DIR) -I$(PYDIR) -I$(SIMDIR) -I$(TYPES_DIR)
+	@echo " compiling pdu.o"
+	$(GCC) -c -o $(COAP_PDU_OBJFILE) $(CLIBFLAGS) $(COAP_PDU_FILE) $(TOSSIMFLAG) $(NDEBUGFLAG) -I$(LIB6LOWPAN_DIR2) -I$(LIB6LOWPAN_DIR) -I$(PYDIR) -I$(SIMDIR) -I$(TYPES_DIR)
+	@echo " compiling str.o"
+	$(GCC) -c -o $(COAP_STR_OBJFILE) $(CLIBFLAGS) $(COAP_STR_FILE) $(TOSSIMFLAG) $(NDEBUGFLAG) -I$(LIB6LOWPAN_DIR2) -I$(LIB6LOWPAN_DIR) -I$(PYDIR) -I$(SIMDIR) -I$(TYPES_DIR)
+	@echo " compiling uri.o"
+	$(GCC) -c -o $(COAP_URI_OBJFILE) $(CLIBFLAGS) $(COAP_URI_FILE) $(TOSSIMFLAG) $(NDEBUGFLAG) -I$(LIB6LOWPAN_DIR2) -I$(LIB6LOWPAN_DIR) -I$(PYDIR) -I$(SIMDIR) -I$(TYPES_DIR)
+	@echo "  compiling $(COMPONENT) to object file sim.o"
+	$(NCC) -c $(PLATFORM_FLAGS) -o $(OBJFILE) $(OPTFLAGS) $(PFLAGS) $(CFLAGS) $(WFLAGS) $(PPPBASEFLAGS) -DNWBYTE_SIM_NCC $(COMPONENT).nc $(LDFLAGS)  $(DUMPTYPES) -fnesc-dumpfile=$(XML)
+
+	@echo "  compiling Python support and C libraries into pytossim.o, tossim.o, and c-support.o"
+	$(GPP) -c $(PLATFORM_CC_FLAGS) $(PLATFORM_FLAGS) -o $(PYOBJFILE) $(OPTFLAGS) $(CFLAGS) $(PYFILE) -I$(PYDIR) -I$(SIMDIR) -DHAVE_CONFIG_H
+	$(GPP) -c $(PLATFORM_CC_FLAGS) $(PLATFORM_FLAGS) -o $(CXXOBJFILE) $(OPTFLAGS) $(CFLAGS) $(CXXFILE) -I$(PYDIR) -I$(SIMDIR)
+	$(GPP) -c $(PLATFORM_CC_FLAGS) $(PLATFORM_FLAGS) -o $(HASHOBJFILE) $(OPTFLAGS) $(CFLAGS) $(HASHFILE) -I$(PYDIR) -I$(SIMDIR)
+
+	@echo "  linking into shared object ./$(SHARED_OBJECT)"
+	$(GPP) $(PLATFORM_BUILD_FLAGS) $(PLATFORM_CC_FLAGS) $(PYOBJFILE) $(TABLEOBJFILE) $(OBJFILE) $(CXXOBJFILE) $(CKSUMOBJFILE) $(IPMALLOCOBJFILE) $(HASHOBJFILE) $(LIB6LOWPAN_OBJFILE) $(LIB6LOWPAN_4944_OBJFILE) $(LIB6LOWPAN_FRAG_OBJFILE) $(LIB6LOWPAN_UTILITY_OBJFILE) $(LIB6LOWPAN_COMPRESS_OBJFILE) $(LIB6LOWPAN_IOVEC_OBJFILE) $(LIB6LOWPAN_IEEE154_HEADER_OBJFILE) $(NWBYTESIMOBJFILE) $(COAP_TINYOSNET_OBJFILE) $(COAP_ENCODE_OBJFILE) $(COAP_LIST_OBJFILE) $(COAP_NET_OBJFILE) $(COAP_PDU_OBJFILE) $(COAP_STR_OBJFILE) $(COAP_SUBSCRIBE_OBJFILE) $(COAP_URI_OBJFILE) $(PLATFORM_LIB_FLAGS) $(LIBS) -o $(SHARED_OBJECT)
+
+	@echo "  copying Python script interface TOSSIM.py from lib/tossim to local directory"
+	@cp $(TOSDIR)/lib/tossim/TOSSIM.py .
+	@echo " "
+	@echo "*** Successfully built $(PLATFORM) TOSSIM library. "

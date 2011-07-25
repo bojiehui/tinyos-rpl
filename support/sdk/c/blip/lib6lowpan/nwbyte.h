@@ -8,13 +8,13 @@
 #endif
 
 /* define normal network byte-orders routines  */
-#if defined(PC) 
+#if defined(PC)
 // use library versions if on linux
 #include <stdlib.h>
 #else
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
-// otherwise have to provide our own 
+// otherwise have to provide our own
 
 #ifndef WITH_OSHAN
 #define ntohs(X)   (((((uint16_t)(X)) >> 8) | ((uint16_t)(X) << 8)) & 0xffff)
@@ -28,12 +28,12 @@ uint32_t ntohl(uint32_t i);
 #else
 
 #endif
-#else 
+#else
 #include <arpa/inet.h>
 #endif
 
 
-#else 
+#else
 #error "No byte-order conversions defined!"
 #endif
 #endif

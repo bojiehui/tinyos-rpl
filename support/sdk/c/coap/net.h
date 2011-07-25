@@ -23,7 +23,12 @@
 #include <stdlib.h>
 #ifdef IDENT_APPNAME
 #include <lib6lowpan/ip.h>
+#ifndef TOSSIM
+#warning "TOSSIM_NET_H"
 typedef uint16_t ssize_t;
+#else
+typedef uint16_t in_port_t;
+#endif
 #else
 #include <string.h>
 #include <time.h>

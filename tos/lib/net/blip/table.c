@@ -34,7 +34,8 @@ void *table_search(table_t *table, int (*pred)(void *)) {
   int i;
   void *cur;
   for (i = 0; i < table->n_elts; i++) {
-    cur = table->data + (i * table->elt_len);
+    /* cur = table->data + (i * table->elt_len);//compiler warning */
+    cur = ((void*)((int)table->data + (i * table->elt_len)));
     switch (pred(cur)) {
     case 1: return cur;
     case -1: return NULL;
@@ -47,6 +48,7 @@ void *table_search(table_t *table, int (*pred)(void *)) {
 void table_map(table_t *table, void(*fn)(void *)) {
   int i;
   for (i = 0; i < table->n_elts; i++)
-    fn(table->data + (i * table->elt_len));
+    /* fn(table->data + (i * table->elt_len));//compiler warning */
+    fn(((void*)((int)table->data + (i * table->elt_len))));
 }
 
