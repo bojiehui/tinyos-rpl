@@ -51,9 +51,17 @@ module CoapBlipP {
 #endif
 #ifdef COAP_CLIENT_ENABLED
     interface CoAPClient;
+#ifdef TOSSIM
+  interface Timer<TMilli> as TimerSim;
+#endif
 #ifdef COAP_CLIENT_SEND_RI
     interface Timer<TMilli> as Timer;
     interface ReadResource[uint8_t uri];
+#endif
+#endif
+#ifdef TOSSIM
+#ifdef RPL_ROUTING
+    interface RootControl;
 #endif
 #endif
     interface Leds;
@@ -76,7 +84,7 @@ module CoapBlipP {
     uint8_t i;
 #endif
     call RadioControl.start();
-    printf("booted %i start\n", TOS_NODE_ID);
+   // printf("booted %i start\n", TOS_NODE_ID);
 #ifdef COAP_SERVER_ENABLED
 #ifdef COAP_RESOURCE_KEY
     if (call Mount.mount() == SUCCESS) {
@@ -96,6 +104,18 @@ module CoapBlipP {
     }
 #endif
 
+#ifdef TOSSIM
+#ifdef RPL_ROUTING
+    if (TOS_NODE_ID == NODE1_ID) {
+      dbg ("UDPEchoP", "Root ID = %d.\n", TOS_NODE_ID);
+      call RootControl.setRoot();
+      call TimerSim.startOneShot(WAITTIME);
+      inet_pton6(COAP_CLIENT_DEST, &sa6.sin6_addr);
+      sa6.sin6_port = htons(COAP_CLIENT_PORT);
+    }
+#endif
+#endif
+
   }
 
 #if defined (COAP_SERVER_ENABLED) && defined (COAP_RESOURCE_KEY)
@@ -113,13 +133,12 @@ module CoapBlipP {
 
   event void ForwardingTableEvents.defaultRouteAdded() {
 #ifdef COAP_CLIENT_ENABLED
-    inet_pton6(COAP_CLIENT_DEST, &sa6.sin6_addr);
-    sa6.sin6_port = htons(COAP_CLIENT_PORT);
+//     inet_pton6(COAP_CLIENT_DEST, &sa6.sin6_addr);
+//     sa6.sin6_port = htons(COAP_CLIENT_PORT);
 #ifdef COAP_CLIENT_SEND_NI
     if (node_integrate_done == FALSE) {
       node_integrate_done = TRUE;
       coap_insert( &optlist, new_option_node(COAP_OPTION_URI_PATH, sizeof("ni") - 1, "ni"), order_opts);
-
       call CoAPClient.request(&sa6, COAP_REQUEST_PUT, optlist, NULL, 0);
     }
 #endif
@@ -128,6 +147,10 @@ module CoapBlipP {
     coap_insert( &optlist, new_option_node(COAP_OPTION_URI_PATH, sizeof("ri") - 1, "ri"), order_opts);
     call Timer.startOneShot(1024);
 #endif
+
+#endif
+#ifdef TOSSIM
+    dbg ("Coap", "Default Route added on ID = %d.\n", TOS_NODE_ID);
 #endif
     call Leds.led2On();
   }
@@ -135,6 +158,18 @@ module CoapBlipP {
 #if defined (COAP_CLIENT_ENABLED) && defined (COAP_CLIENT_SEND_RI)
   event void Timer.fired() {
     call ReadResource.get[KEY_ROUTE_CLIENT](0);
+  }
+#endif
+
+#ifdef TOSSIM
+  event void TimerSim.fired() {
+    dbg ("Coap", "TimerSim fired!!\n");
+    optlist = NULL;
+    coap_insert( &optlist, new_option_node(COAP_OPTION_URI_PATH, sizeof("l") - 1, "l"), order_opts);
+
+    call CoAPClient.request(&sa6, COAP_REQUEST_GET, optlist, 0, 0);
+
+    call TimerSim.startPeriodic(1024 * COAP_CLIENT_SEND_RI_INTERVAL);
   }
 #endif
 
@@ -146,7 +181,8 @@ module CoapBlipP {
   event void CoAPClient.request_done() {
     //TODO: handle the request_done
   };
-#ifdef  COAP_CLIENT_SEND_RI
+
+#if defined  (COAP_CLIENT_SEND_RI)
   event void ReadResource.getDone[uint8_t uri_key](error_t result,
 						   coap_tid_t id,
 						   uint8_t asyn_message,
@@ -154,7 +190,9 @@ module CoapBlipP {
 						   uint8_t buflen) {
 
     if (result == SUCCESS) {
-      call Leds.led0Toggle();
+      optlist = NULL;
+      coap_insert( &optlist, new_option_node(COAP_OPTION_URI_PATH, sizeof("ri") - 1, "ri"), order_opts);
+//       call Leds.led0Toggle();
       call CoAPClient.request(&sa6, COAP_REQUEST_PUT, optlist, val_buf, buflen);
     }
 

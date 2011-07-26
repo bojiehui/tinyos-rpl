@@ -112,6 +112,7 @@ module CoapUdpClientP {
     if (! (pdu = coap_new_request(method, optlist, buf, buflen)))
       return FALSE;
 
+    dbg ("Coap", "CoAP: Send: Node %i is sending Message to Node = %X ... %X on Port = %i   \n",TOS_NODE_ID, ntohs(dest->sin6_addr.s6_addr16[0]), ntohs(dest->sin6_addr.s6_addr16[7]), ntohs(dest->sin6_port) );
     call LibCoapClient.send(ctx_client, dest, pdu, 1);
     return SUCCESS;
   };
@@ -145,7 +146,6 @@ module CoapUdpClientP {
       }
 
     }
-    coap_delete_node( node );
   }
 
   event void LibCoapClient.read(struct sockaddr_in6 *from, void *data,

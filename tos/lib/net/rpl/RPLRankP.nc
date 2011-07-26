@@ -415,11 +415,11 @@ implementation {
     uint16_t len; 
     static struct ip_iovec v;
     static rpl_data_hdr_t data_hdr;
-
+   printf_dbg("RankP forwarding initiate 1 \n");
 #ifndef RPL_OF_MRHOF
     return TRUE;
 #endif
-
+    printf_dbg("RankP forwarding initiate \n");
     if(pkt->ip6_hdr.ip6_nxt == IANA_ICMP)
       return TRUE;
 
@@ -474,10 +474,11 @@ implementation {
     uint8_t o_bit;
     uint8_t nxt_hdr = IPV6_HOP;
     int off;
-
+printf_dbg("RankP forwarding approve 1 \n");
 #ifndef RPL_OF_MRHOF
     return TRUE;
 #endif
+ printf_dbg("RankP forwarding approve \n");
     /* is there a HBH header? */
     off = call IPPacket.findHeader(pkt->ip6_data, pkt->ip6_hdr.ip6_nxt, &nxt_hdr); 
     if (off < 0) return TRUE;
@@ -601,9 +602,13 @@ implementation {
   void getNewRank(){
     uint16_t prevRank = nodeRank;//, myParent;
     bool newParent = FALSE;
-
-    newParent = call RPLOF.recalcualateRank();
+struct in6_addr ADDR_MY_IP;
+call IPAddress.getGlobalAddr(&ADDR_MY_IP);
+printf_dbg("getNewRank: 1 %i  \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
+ newParent = call RPLOF.recalcualateRank();//hier gehts dahin
+printf_dbg("getNewRank: 2 %i  \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
     nodeRank = call RPLOF.getRank();
+printf_dbg("getNewRank: 3 %i  \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 
     printf("GOT new rank %d %d %d\n", TOS_NODE_ID, call RPLOF.getRank(), newParent);
 
@@ -648,21 +653,26 @@ implementation {
     struct dio_prefix_t* dio_prefix;
     uint8_t* newPoint;
     uint16_t trackLength = ntohs(iph->ip6_plen);
-
+struct in6_addr ADDR_MY_IP;
+call IPAddress.getGlobalAddr(&ADDR_MY_IP);
     /* I am root */
-    if (nodeRank == ROOT_RANK) return; 
-
+ if (nodeRank == ROOT_RANK){
+printf_dbg("NodeRank = Root_Rank \n");
+ return;
+} 
+/* printf_dbg("Wo isser denn %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
     /* new iteration */
     if (dio->version != VERSION && compare_ipv6(&dio->dodagID, &DODAGID)) {
-      //printf("new iteration!\n");
+      printf("new iteration!\n");
       parentNum = 0;
       VERSION = dio->version;
       call RPLOF.resetRank();
+printf_dbg("Status Rank: %i nach Reset \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
       nodeRank = INFINITE_RANK;
       minRank = INFINITE_RANK;
       resetValid();
     }
-
+/* printf_dbg("Wo isser denn 2 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
     //if (dio->dagRank >= nodeRank && nodeRank != INFINITE_RANK) return;
 
     //printf("DIO in Rank %d %d %d %d\n", ntohs(iph->ip6_src.s6_addr16[7]), dio->dagRank, nodeRank, parentNum);
@@ -673,10 +683,11 @@ implementation {
     // DODAG ID in this DIO packet (received DODAGID)
 
     memcpy_rpl((uint8_t*)&rDODAGID, (uint8_t*)&dio->dodagID, sizeof(struct in6_addr));
-    tempPrf = dio->flags & DIO_PREF_MASK;
-
+    tempPrf = dio->flags.flags_chunk & DIO_PREF_MASK;
+/* printf_dbg("Wo isser denn 3 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
     if (!compare_ipv6(&DODAGID, &DODAG_MAX) && 
         !compare_ipv6(&DODAGID, &rDODAGID)) { 
+/* printf_dbg("Wo isser denn 4 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
       // I have a DODAG but this packet is from a new DODAG
       if (Prf < tempPrf) { //ignore
 	//printf("LESS PREFERENCE IGNORE \n");
@@ -687,6 +698,7 @@ implementation {
 	Prf = tempPrf;
 	memcpy_rpl((uint8_t*)&DODAGID, (uint8_t*)&rDODAGID, sizeof(struct in6_addr));
 	parentNum = 0;
+/* printf_dbg("Wo isser denn 5 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
 	VERSION = dio->version;
 	call RPLOF.resetRank();
 	nodeRank = INFINITE_RANK;
@@ -698,11 +710,13 @@ implementation {
         //printf("MOVE TO NEW DODAG %d %d\n",compare_ipv6(&DODAGID, &DODAG_MAX), compare_ipv6(&DODAGID, &rDODAGID));
 	newDodag = TRUE;
       }
+/* printf_dbg("Wo isser denn 6 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
     } else if (compare_ipv6(&DODAGID, &DODAG_MAX)) { //not belong to a DODAG yet
       //      printf("TOTALLY NEW DODAG \n");
       Prf = tempPrf;
       memcpy_rpl((uint8_t*)&DODAGID, (uint8_t*)&rDODAGID, sizeof(struct in6_addr));
       parentNum = 0;
+/* printf_dbg("Wo isser denn 7 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
       VERSION = dio->version;
       call RPLOF.resetRank();
       nodeRank = INFINITE_RANK;
@@ -710,7 +724,10 @@ implementation {
       //desiredParent = MAX_PARENT;
       newDodag = TRUE;
       resetValid();
-    } else { // same DODAG
+/* printf_dbg("Wo isser denn 8 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
+    } else {
+/* printf_dbg("Wo isser denn 8 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
+ // same DODAG
       //printf("FROM SAME DODAG \n");
       //Prf = tempPrf; // update prf
     }
@@ -724,7 +741,7 @@ implementation {
     OCP = 0;
 
     // SDH : TODO : make some #defs for DODAG constants
-
+/* printf_dbg("Wo isser denn 9 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
     if (dio_body->type == 2) { // this is metric
 
       trackLength -= sizeof(struct dio_body_t);
@@ -732,7 +749,7 @@ implementation {
       newPoint = (uint8_t*)(struct dio_body_t*)(dio_body + 1);
       dio_metric_header = (struct dio_metric_header_t*) newPoint;
       trackLength -= sizeof(struct dio_metric_header_t);
-
+/* printf_dbg("Wo isser denn 10 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
       if (dio_metric_header->routing_obj_type) {
 	// etx metric
         // SDH : double cast
@@ -744,16 +761,18 @@ implementation {
 	//printf("ETX RECV %d \n", etx);
 	METRICID = 7;
 	newPoint = (uint8_t*)(struct dio_etx_t*)(dio_etx + 1);
+/* printf_dbg("Wo isser denn 11 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
       }
     }else{
       etx = pParentRank*divideRank;
       //printf("No ETX %d \n", dio_body->type);
     }
-
+/* printf_dbg("Wo isser denn 12 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
     /* SDH : what is type 3? */
     dio_prefix = (struct dio_prefix_t*) newPoint;
 
     if (trackLength > 0 && dio_prefix->type == 3) {
+/* printf_dbg("Wo isser denn 13 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
       trackLength -= sizeof(struct dio_prefix_t);
       if (ignore == FALSE){
         /* SDH : this will be a call to NeighborDiscovery */
@@ -762,7 +781,7 @@ implementation {
 	// TODO: Save prefix somewhere and make it a searchable command
       }
     }
-
+/* printf_dbg("Wo isser denn 14 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
     /* SDH : type 4 is a configuration header. */
     dio_dodag_config = (struct dio_dodag_config_t*) newPoint;
 
@@ -771,7 +790,7 @@ implementation {
     if (trackLength > 0 && dio_dodag_config->type == 4) {
       // this is configuration header
       trackLength -= sizeof(struct dio_dodag_config_t);
-
+/* printf_dbg("Wo isser denn 15 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
       //printf(" > %d %d %d %d %d \n", trackLength, METRICID, dio_dodag_config->type, ignore, dio_dodag_config->ocp);
 
       if (ignore == FALSE) {
@@ -780,6 +799,7 @@ implementation {
 
 	MAX_RANK_INCREASE = dio_dodag_config->MaxRankInc;
 	//MIN_HOP_RANK_INCREASE = dio_dodag_config->MinHopRankInc;
+/* printf_dbg("Wo isser denn 16 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
 
 	call RouteInfo.setDODAGConfig(dio_dodag_config->DIOIntDoubl, 
                                       dio_dodag_config->DIOIntMin, 
@@ -787,6 +807,7 @@ implementation {
                                       dio_dodag_config->MaxRankInc, 
                                       dio_dodag_config->MinHopRankInc);
 	call RPLOF.setMinHopRankIncrease(dio_dodag_config->MinHopRankInc);
+/* printf_dbg("Wo isser denn 17 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
 	/*
 	printf("Doub %d, min %d, redun %d, maxrank %d, minhop %d \n", 
 		   dio_dodag_config->DIOIntDoubl,
@@ -810,26 +831,28 @@ implementation {
     tempParent.etx_hop = INIT_ETX;
     tempParent.valid = TRUE;
     tempParent.etx = etx;
-
+/* printf_dbg("Wo isser denn 18 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
     if((!call RPLOF.objectSupported(METRICID) || !call RPLOF.OCP(OCP)) && parentNum == 0){
       // either I dont know the metric object or I don't support the OF
       //printf("LEAF STATE! \n");
       insertParent(tempParent);
       call RPLOF.recomputeRoutes();
+/* printf_dbg("Wo isser denn 19 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
       //getNewRank(); no need to compute routes when I am going to stay as a leaf!
       nodeRank = INFINITE_RANK;
       leafState = TRUE;
       return;
     }
-
+/* printf_dbg("Wo isser denn 20 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
     if ((parentIndex = getParent(&iph->ip6_src)) != MAX_PARENT) { 
       // parent already there and the rank is useful
 
       //printf("HOW many parents 1 ? %d %d \n", parentNum, newDodag);
-
+/* printf_dbg("Status Rank:33 %i vor Reset \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
       if(newDodag){
 	// old parent has to move to a new DODAG now
 	if (parentNum != 0) {
+printf_dbg("Status Rank:9 %i vor Reset \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 	  //chooseDesired();
 	  call RPLOF.recomputeRoutes(); // we do this to make sure that this parent is still the best and it is worth moving
 
@@ -844,14 +867,17 @@ implementation {
 	    resetValid();
 	    insertParent(tempParent);
 	    call RPLOF.recomputeRoutes();
+printf_dbg("Status Rank:99 %i vor Reset \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 	    getNewRank();
 	  } else {
 	    // I have a better node in the current DODAG so I am not moving!
+printf_dbg("Status Rank:999 %i vor Reset \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 	    call RPLOF.recomputeRoutes();
 	    getNewRank();
 	    ignore = TRUE;
 	  }
 	} else {
+printf_dbg("Status Rank:9999 %i vor Reset \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 	  // not likely to happen but this is a new DODAG...
 	  Prf = tempPrf;
 	  memcpy_rpl((uint8_t*)&DODAGID, (uint8_t*)&rDODAGID, sizeof(struct in6_addr));
@@ -864,6 +890,7 @@ implementation {
 	}
 
       }else{
+printf_dbg("Status Rank:99999 %i vor Reset \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 	// this DIO is just from a parent that I know already, update and re-evaluate
 	//	printf("known parent -- update\n");
 	parentSet[parentIndex].rank = pParentRank; //update rank
@@ -874,6 +901,8 @@ implementation {
       }
 
     }else{
+
+/* printf_dbg("Wo isser denn 21 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
       // this parent is not in my routing table
 
       //      printf("HOW many parents? %d \n", parentNum);
@@ -886,6 +915,7 @@ implementation {
       //printf("New parent %d %d %d\n", ntohs(iph->ip6_src.s6_addr16[7]), tempParent.etx_hop, parentNum);
 
       if(newDodag){
+/* printf_dbg("Wo isser denn 22 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
 	// not only is this parent new but we have to move to a new DODAG now
 	//printf("New DODAG \n");
 	if (parentNum != 0) {
@@ -899,14 +929,17 @@ implementation {
 	    parentNum = 0;
 	    VERSION = dio->version;
 	    resetValid();
+/* printf_dbg("Wo isser denn 23 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
 	    insertParent(tempParent);
 	    call RPLOF.recomputeRoutes();
 	    getNewRank();
 	  } else {
 	    //do nothing
 	    ignore = TRUE;
+/* printf_dbg("Wo isser denn 24 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
 	  }
 	} else {
+/* printf_dbg("Wo isser denn 25 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
 	  // This is the first DODAG I am registering ... or the once before are all goners already
 	  //printf("First DODAG\n");
 	  Prf = tempPrf;
@@ -915,16 +948,21 @@ implementation {
 	  VERSION = dio->version;
 	  resetValid();
 	  insertParent(tempParent);
+printf_dbg("Wo isser denn End 1 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 	  call RPLOF.recomputeRoutes();
-	  getNewRank();
+printf_dbg("Wo isser denn End 2 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
+ getNewRank();//Hier geht auseinander node 2 und node 3
+printf_dbg("Wo isser denn End 3 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 	}
       }else{
+printf_dbg("Wo isser denn 26 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 	// its a new parent from the current DODAG .. so no need for DODAG configuarion just insert
 	//	printf("Same DODAG %d \n", parentNum);
 	insertParent(tempParent);
 	call RPLOF.recomputeRoutes();
 	preRank = nodeRank;
 	getNewRank();
+printf_dbg("Wo isser denn 27 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
       }
     }
   }
@@ -941,27 +979,33 @@ implementation {
   event void IP_DIO.recv(struct ip6_hdr *iph, void *payload, 
                          size_t len, struct ip6_metadata *meta){
     struct dio_base_t *dio;
+struct in6_addr ADDR_MY_IP;
     dio = (struct dio_base_t *) payload;
-
-    if (!m_running) return;
-
-    if(TOS_NODE_ID == 2 && dio->dagRank == ROOT_RANK)
-      return;
+ call IPAddress.getGlobalAddr(&ADDR_MY_IP);
+ printf_in6addr_dbg(&ADDR_MY_IP);
+  if (!m_running){ return;}
 
     //printf_in6addr(&iph->ip6_src);
     //printf(" >  I GOT %d %d %d %d %d!!\n", iph->ip6_nxt, dio->icmpv6.code, dio->dagRank, nodeRank, parentNum);
+printf_dbg(" >  I GOT  %d ICMPv6 Code %d DIODakRank: %d Vorheriger Node Rank: %d ParentNum: %d!!\n", iph->ip6_nxt, dio->icmpv6.code, dio->dagRank, nodeRank, parentNum);
+printf_dbg("Status vor DAG akzeptiert in RankP Jetzt Rank: %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
+ if(nodeRank != ROOT_RANK && dio->dagRank != 0xFFFF){
+   parseDIO(iph, dio);//hier wird es verschieden fuer node 2 und 3
 
-    if(nodeRank != ROOT_RANK && dio->dagRank != 0xFFFF)
-      parseDIO(iph, dio);
+}
 
     // evict parent if the node is advertizing 0xFFFF;
-    if(dio->dagRank == 0xFFFF && getParent(&iph->ip6_src) != MAX_PARENT)
+    if(dio->dagRank == 0xFFFF && getParent(&iph->ip6_src) != MAX_PARENT){
+printf_dbg("Status vor DAG akzeptiert in RankP 0.2 Jetzt Rank: %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
       evictParent(getParent(&iph->ip6_src));
+    }
+printf_dbg("Status vor DAG akzeptiert 2 in RankP Jetzt Rank: %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 
     //leafState = FALSE;
     if (nodeRank > dio->dagRank || dio->dagRank == INFINITE_RANK) {
       if (!ignore) {
         /* SDH : where did this go? */
+printf_dbg("Status vor DAG akzeptiert 3 in RankP Jetzt Rank: %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
         signal IP_DIO_Filter.recv(iph, payload, len, meta);
       }
       ignore = FALSE;

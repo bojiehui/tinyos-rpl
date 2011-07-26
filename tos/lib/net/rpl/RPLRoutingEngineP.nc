@@ -195,10 +195,10 @@ implementation{
     msg.icmpv6.type = 155;//ICMP_TYPE_ROUTER_ADV; // Is this type correct?
     msg.icmpv6.code = ICMPV6_CODE_DIO;
     msg.icmpv6.checksum = 0;
-    msg.flags = 0;
-    msg.flags = GROUND_STATE << 7;
-    msg.flags |= MOP << DIO_MOP_SHIFT;
-    msg.flags |= DAG_PREF << 0;
+    msg.flags.flags_chunk = 0;
+    msg.flags.flags_chunk = GROUND_STATE << 7;
+    msg.flags.flags_chunk |= MOP << DIO_MOP_SHIFT;
+    msg.flags.flags_chunk |= DAG_PREF << 0;
     msg.version = DODAGVersionNumber;
     msg.instance_id.id = RPLInstanceID;
     msg.dtsn = DTSN;
@@ -561,27 +561,39 @@ implementation{
                          size_t len, struct ip6_metadata *meta) {
     struct dio_base_t *dio = (struct dio_base_t *)payload;
     if (!running) return;
+printf_in6addr_dbg(&ADDR_MY_IP);
+printf_dbg("Status vor DAG akzeptiert 111 in Routing Engine Jetzt Rank: %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 
     if (I_AM_ROOT) {
+ printf_dbg("Ich bin root \n");
       return;
     }
-
+    printf_dbg("DIO bekommen \n");
+    printf_in6addr_dbg(&iph->ip6_src);
+    printf_dbg(" Source Adresse war das \n");
+    /* printf_in6addr_dbg(&iph->ip6_dst); */
+    /* printf_dbg(" Destination Adresse war das \n"); */
     if (DIORedun != 0xFF) {
+  printf_dbg("Reduncounter %i \n",redunCounter);
       redunCounter ++;
     } else {
       redunCounter = 0xFF;
     }
-
+   
     /* JK: The if() statement below is TinyRPL specific and ties up with the inconsistencyDectect case above */
     if(dio->dagRank == INFINITE_RANK){
+      printf_dbg("Habe den Rank %i  \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
       if(call RPLRankInfo.getRank(&ADDR_MY_IP) != INFINITE_RANK && (call InitDISTimer.getNow()%2) == 1){ // send DIO if I can help!
 	//printf("Infinite Rank RX %d\n", TOS_NODE_ID);
+printf_dbg("Rank bekommen: %i und versende auch DIO \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 	post sendDIOTask();
       }
       return;
     }
 
+    printf_dbg("Habe ich Parent? %i \n",call RPLRankInfo.hasParent());
     if (call RPLRankInfo.hasParent() && call InitDISTimer.isRunning()) {
+printf_dbg("DIS stop  \n");
       call InitDISTimer.stop(); // no need for DIS messages anymore
     }
 
@@ -590,6 +602,7 @@ implementation{
 
     if ((I_AM_LEAF && !hasDODAG)
         || !compare_ip6_addr(&DODAGID,&dio->dodagID)) {
+printf_dbg("I am leaf und habe noch keinen DAG \n");
       // If I am leaf I do not send any DIO messages
       // assume that this DIO is from the DODAG with the
       // highest preference and is the preferred parent's DIO packet?
@@ -599,11 +612,13 @@ implementation{
       // new DODAGID
       //printf("FOUND new dodag %d %d %d\n", I_AM_LEAF, hasDODAG, compare_ip6_addr(&DODAGID,&dio->dodagID));
       hasDODAG = TRUE;
+ /* printf_dbg("Status vor DAG akzeptiert Jetzt Rank: %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
       // assume that this DIO is from the DODAG with the
       // highest preference and is the preferred parent's DIO packet?
       goto accept_dodag;
     }
-    
+       printf_dbg("Weiter %i \n",TOS_NODE_ID);
+   
     if (RPLInstanceID == dio->instance_id.id && 
         compare_ip6_addr(&DODAGID, &dio->dodagID) && 
         DODAGVersionNumber != dio->version && 
@@ -644,7 +659,7 @@ implementation{
       /*  I have no parent at this point! */
       //printf("noparent %d %d\n", node_rank, call RPLRankInfo.hasParent());
       hasDODAG = FALSE;
-      GROUND_STATE = dio->flags & DIO_GROUNDED_MASK;
+      GROUND_STATE = dio->flags.flags_chunk & DIO_GROUNDED_MASK;
       //GROUND_STATE = dio->flags.flags_element.grounded;
       call TrickleTimer.stop();
       // new add
@@ -656,13 +671,14 @@ implementation{
     // assume that this DIO is from the DODAG with the
     // highest preference and is the preferred parent's DIO packet?
     hasDODAG = TRUE;
-    MOP = (dio->flags & DIO_MOP_MASK) >> DIO_MOP_SHIFT;
-    DAG_PREF = dio->flags & DIO_PREF_MASK;
+    MOP = (dio->flags.flags_chunk & DIO_MOP_MASK) >> DIO_MOP_SHIFT;
+    DAG_PREF = dio->flags.flags_chunk & DIO_PREF_MASK;
     RPLInstanceID = dio->instance_id.id;
     memcpy(&DODAGID, &dio->dodagID, sizeof(struct in6_addr));
     DODAGVersionNumber = dio->version;
-    GROUND_STATE = dio->flags & DIO_GROUNDED_MASK;
+    GROUND_STATE = dio->flags.flags_chunk & DIO_GROUNDED_MASK;
     //GROUND_STATE = dio->flags.flags_element.grounded;
+    printf_dbg("Habe DAG akzeptiert Jetzt Rank: %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
     call RPLRouteInfo.resetTrickle();
     return;
   }

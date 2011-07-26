@@ -44,7 +44,7 @@ CFLAGS += -DNUM_URIS=2
 # CFLAGS += -DCOAP_RESOURCE_VOLT
 # CFLAGS += -DCOAP_RESOURCE_KEY
 CFLAGS += -DCOAP_RESOURCE_LED
-# CFLAGS += -DCOAP_RESOURCE_ALL 
+# CFLAGS += -DCOAP_RESOURCE_ALL
 CFLAGS += -DCOAP_RESOURCE_ROUTE
 
 ################ CoAP Client ################################
@@ -52,12 +52,22 @@ CFLAGS += -DCOAP_CLIENT_ENABLED
 # client destination port
 CFLAGS += -DCOAP_CLIENT_PORT=61616L
 # client IPv6 destination address
-CFLAGS += -DCOAP_CLIENT_DEST=\"fec0::100\"
+#CFLAGS += -DCOAP_CLIENT_DEST=\"fec0::100\"
 # choose ONE resource to be sent after startup
 # send /ni (node integrate) after startup
-CFLAGS += -DCOAP_CLIENT_SEND_NI
+#CFLAGS += -DCOAP_CLIENT_SEND_NI
 # send /ri (routing information) after startup in specified interval (seconds)
-CFLAGS += -DCOAP_CLIENT_SEND_RI -DCOAP_CLIENT_SEND_RI_INTERVAL=5
+#CFLAGS += -DCOAP_CLIENT_SEND_RI -DCOAP_CLIENT_SEND_RI_INTERVAL=5
+
+################ Simulations ################################
+CFLAGS += -DRPL_ROOT_ADDR=1
+CFLAGS += -DRPL_ROOT_PORT=1
+
+CFLAGS += -DNODE1_ID=1
+CFLAGS += -DWAITTIME=15000 -DCOAP_CLIENT_SEND_RI_INTERVAL=15
+CFLAGS += -DCOAP_CLIENT_DEST=\"fec0::3\"
+CFLAGS += -DBLIP_L2_RETRIES=3 -DBLIP_L2_DELAY=103
+PFLAGS += -DBLIP_DERIVE_SHORTADDRS
 
 CFLAGS += -I.
 include $(MAKERULES)

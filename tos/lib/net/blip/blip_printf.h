@@ -50,6 +50,9 @@ void printf_in6addr(struct in6_addr *a) {
 #ifdef TOSSIM
 #warning "TOSSIM printf"
 #define printf(X, args...) dbg("IPForwardingEngine", X,## args);
+#define printf_dbg(X, args...) dbg("Test", X,## args);
+#define printf_in6addr_dbg(X) {static char print_buf[64];inet_ntop6(X, print_buf, 64);dbg_clear("Test",print_buf);};
+#define printf_in6addr_coap(X) {static char print_buf[64];inet_ntop6(X, print_buf, 64);dbg_clear("Coap",print_buf);};
 #define printfflush();
 #define printf_in6addr(X) {static char print_buf[64];inet_ntop6(X, print_buf, 64);dbg_clear("IPForwardingEngine",print_buf);};
 #define printf_buf(buf, len) ;
@@ -65,11 +68,11 @@ void printf_in6addr(struct in6_addr *a) {
 #if defined (_H_msp430hardware_h) || defined (_H_atmega128hardware_H)
   #include <stdio.h>
 #else
-#ifdef __M16C60HARDWARE_H__ 
+#ifdef __M16C60HARDWARE_H__
   #include "m16c60_printf.h"
 #else
   #include "generic_printf.h"
-#endif 
+#endif
 #endif
 #undef putchar
 #endif /* PRINTFUART_ENABLED */

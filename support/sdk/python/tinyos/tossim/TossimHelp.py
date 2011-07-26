@@ -45,7 +45,7 @@ def loadLinkModel(t, file):
         s = line.split(" ")
         if (len(s) > 0):
             if s[0] =="gain":
-                #print " ", s[1], " ", s[2], " ", s[3];
+                #print " ", s[1], " ", s[2], " ", s[3];      
                 r.add(int(s[1]), int(s[2]), float(s[3]))
             if s[0]=="noise":
                 #print " ", s[1], " ", s[2], " ", s[3];
@@ -62,15 +62,21 @@ def loadNoiseModel(t, file, nodes):
         str = line.strip()
         if (str != ""):
             val = int(str)
-            for i in nodes:
+            for i in range(1,nodes+1):
                 t.getNode(i).addNoiseTraceReading(val)
 
-    for i in nodes:
+    for i in range(1,nodes+1):
       print "Creating noise model for ",i;
       t.getNode(i).createNoiseModel()
 
 def initializeNodes(t, nodes):
     print "Initializing nodes..."
-    for i in nodes:
+    for i in range(1,nodes+1):
       t.getNode(i).bootAtTime((31 + t.ticksPerSecond() / 10) + 1);
       
+
+def print_gain(r, nodes):
+     for i in range(1,nodes+1):
+          for j in range(1,nodes+1):
+               if(i!=j):
+                    print "gain " + str(i) +' ' + str(j) + ' ' + str(int(r.gain(i,j)))

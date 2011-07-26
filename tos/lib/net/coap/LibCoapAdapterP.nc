@@ -68,7 +68,7 @@ module LibCoapAdapterP {
       return COAP_INVALID_TID;
 
     call UDPServer.sendto(dst, pdu->hdr, pdu->length);
-
+    dbg("Coap", "** CoapUdpServer: Send response with code %i\n", pdu->hdr->code);
     if ( free_pdu )
       coap_delete_pdu( pdu );
     return ntohs(pdu->hdr->id);

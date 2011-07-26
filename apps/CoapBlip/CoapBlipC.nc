@@ -53,8 +53,11 @@ configuration CoapBlipC {
   CoapBlipP.Init <- MainC.SoftwareInit;
   CoapBlipP.ForwardingTableEvents -> IPStackC.ForwardingTableEvents;
 
+#ifdef TOSSIM
 #ifdef RPL_ROUTING
   components RPLRoutingC;
+  CoapBlipP.RootControl -> RPLRoutingC;
+#endif
 #endif
 
 #ifdef COAP_SERVER_ENABLED
@@ -140,11 +143,18 @@ configuration CoapBlipC {
   components CoapUdpClientC;
   components new UdpSocketC() as UdpClientSocket;
 #ifdef COAP_CLIENT_SEND_RI
-  components new CoapRouteResourceC(uint16_t, KEY_ROUTE_CLIENT) as CoapClientReadRouteResource;  CoapBlipP.ReadResource[KEY_ROUTE_CLIENT] -> CoapClientReadRouteResource.ReadResource;
+  components new CoapRouteResourceC(uint16_t, KEY_ROUTE_CLIENT) as CoapClientReadRouteResource;
+  CoapBlipP.ReadResource[KEY_ROUTE_CLIENT] -> CoapClientReadRouteResource.ReadResource;
   components new TimerMilliC();
   CoapClientReadRouteResource.ForwardingTable -> IPStackC;
   CoapBlipP.Timer -> TimerMilliC;
 #endif
+#ifdef TOSSIM
+  components new TimerMilliC() as TimerSim;
+  CoapBlipP.TimerSim -> TimerSim;
+#endif
+
+
   CoapBlipP.CoAPClient -> CoapUdpClientC;
   CoapUdpClientC.LibCoapClient -> LibCoapAdapterC.LibCoapClient;
   CoapUdpClientC.Init <- MainC.SoftwareInit;

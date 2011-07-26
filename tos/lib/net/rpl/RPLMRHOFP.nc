@@ -25,6 +25,7 @@ implementation{
   uint16_t prevParent;
   bool newParent = FALSE;
   uint16_t desiredParent = MAX_PARENT;
+/* uint16_t desiredParent = 0;//with this hardcoding it works */
   uint16_t min_hop_rank_inc = 1;
 
   route_key_t route_key = ROUTE_INVAL_KEY;
@@ -79,25 +80,42 @@ implementation{
 
     uint16_t prevEtx, prevRank;
     parent_t* parentNode = call ParentTable.get(desiredParent);
-
+/* parent_t* parentNode = call ParentTable.get(0); */
     prevEtx = nodeEtx;
     prevRank = nodeRank;
-
-    nodeEtx = parentNode->etx_hop + parentNode -> etx;
+    //////Originale Funktion
+    nodeEtx = parentNode->etx_hop + parentNode->etx;
      // -1 because the ext computation will add at least 1
     nodeRank = (parentNode->etx_hop / divideRank * min_hop_rank_inc) + parentNode->rank;
+////////////////////////////////////////////////////
+//PTR
+
+//printf("OF0 PARENT rank %d \n", parentSet[desiredParent].rank);
+
+
+/* //////////Hiermit geht (aus RPLOF0P.nc)///////////////// */
+/*     nodeEtx = parentNode->etx_hop; */
+/*     nodeRank = parentNode->rank + min_hop_rank_inc; */
+/* ///////////////////////////////////////////////////// */
+   
+
+    printf_dbg("Recalculate Rank Desired Parent %i Prev Etx %i Prev Rank %i nodeEtx %i NodeRank %i  \n",desiredParent, prevEtx, prevRank, nodeEtx, nodeRank);
+ printf_dbg("parent..etx_hop: %i parent..rank %i minHop %i  \n",parentNode->etx_hop,parentNode->rank,min_hop_rank_inc);
 
     //printf("%d %d %d %d %d %d %d\n", desiredParent, parentNode->etx_hop, divideRank, parentNode->rank, (min_hop_rank_inc - 1), nodeRank, prevRank);
 
     if (nodeRank <= ROOT_RANK && prevRank > 1) {
+printf_dbg("Recalculate Rank 2  \n");
       nodeRank = prevRank;
       nodeEtx = prevEtx;
     }
 
     if(newParent){
+printf_dbg("Recalculate Rank 3  \n");
       newParent = FALSE;
       return TRUE;
     }else{
+printf_dbg("Recalculate Rank 4  \n");
       return FALSE;
     }
   }

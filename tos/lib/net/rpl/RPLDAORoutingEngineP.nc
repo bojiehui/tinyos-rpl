@@ -66,10 +66,8 @@ generic module RPLDAORoutingEngineP(){
 #define printfUART(X, args ...) dbg("RPLDAORoutingEngine",X,## args)
 #define INIT_DAO 1024;
 
-#define INIT_DAO 1024;
-
   uint8_t dao_double_count = 0;
-  uint8_t dao_double_limit = 6;
+  uint8_t dao_double_limit = 8;
   uint32_t dao_rate = INIT_DAO;
   uint32_t delay_dao = 256; // dao batches will be fired 256 ms after the first dao message is scheduled
   // every 100 ms, check if elememts in the entry should be deleted --
@@ -77,7 +75,7 @@ generic module RPLDAORoutingEngineP(){
   uint32_t remove_time = 60 * 1024U; 
   uint8_t dao_table_pos = 0;
   uint16_t DTSN = 0;
-  uint8_t daoseq = 0;
+  uint16_t daoseq = 0;
   uint16_t init_daorank = 1;
   struct in6_addr MY_ADDR;
 
@@ -87,20 +85,6 @@ generic module RPLDAORoutingEngineP(){
   downwards_table_t downwards_table[ROUTE_TABLE_SZ];
   uint8_t downwards_table_count = 0;
   bool m_running = FALSE;
-
-  void memcpy_rpl(uint8_t* a, uint8_t* b, uint8_t len){
-    uint8_t i;
-    for (i = 0 ; i < len ; i++)
-      a[i] = b[i];
-  }
-
-  bool memcmp_rpl(uint8_t* a, uint8_t* b, uint8_t len){
-    uint8_t i;
-    for (i = 0 ; i < len ; i++)
-      if(a[i] != b[i])
-	return FALSE;
-    return TRUE;
-  }
 
   command error_t StdControl.start() {
     call RPLDAORouteInfo.startDAO();
@@ -140,7 +124,7 @@ generic module RPLDAORoutingEngineP(){
       if (call RPLRouteInfo.getDefaultRoute(&next_hop) != SUCCESS)
 	//printfUART("RPLDAORouting:GetDefaultRoute Success!\n");
         return;
-      memcpy_rpl((uint8_t*)&dao_msg->s_pkt.ip6_hdr.ip6_dst, (uint8_t*)&next_hop, sizeof(struct in6_addr));
+      memcpy(&dao_msg->s_pkt.ip6_hdr.ip6_dst, &next_hop, sizeof(struct in6_addr));
 #else 
       /* in non-storing mode we must use global addresses */
       call IPAddress.getGlobalAddr(&dao_msg->s_pkt.ip6_hdr.ip6_src);
@@ -150,7 +134,7 @@ generic module RPLDAORoutingEngineP(){
 #endif
       dao = (struct dao_base_t *) dao_msg->s_pkt.ip6_data->iov_base;
 
-      //printfUART(">> sendDAO %d %lu \n", TOS_NODE_ID, ++count);
+      printf(">> sendDAO %d %lu \n\n\n", TOS_NODE_ID, ++count);
       call IP_DAO.send(&dao_msg->s_pkt);
       call SendPool.put(dao_msg);
 
@@ -242,7 +226,7 @@ generic module RPLDAORoutingEngineP(){
 #else
     call IPAddress.getLLAddr(&MY_ADDR);
 #endif
-    memcpy_rpl((uint8_t*)&dao_msg->dao_base.target_option.target_prefix, (uint8_t*)&MY_ADDR, sizeof(struct in6_addr));
+    memcpy(&dao_msg->dao_base.target_option.target_prefix, &MY_ADDR, sizeof(struct in6_addr));
     
     dao_msg->dao_base.transit_info_option.type = RPL_TRANSIT_INFORMATION_TYPE;
     dao_msg->dao_base.transit_info_option.option_length = 22;
@@ -307,7 +291,7 @@ generic module RPLDAORoutingEngineP(){
     struct route_entry *entry;
     route_key_t new_key = ROUTE_INVAL_KEY;
 
-//     printfUART("RPLDAORouting:receive DAO: %i\n", call RPLDAORouteInfo.getStoreState());
+     printf("RPLDAORouting:receive DAO: %i\n\n", call RPLDAORouteInfo.getStoreState());
     if (!m_running) return;
 
 #ifndef RPL_STORING_MODE
@@ -319,10 +303,9 @@ generic module RPLDAORoutingEngineP(){
     /* SDH : the two cases are the same...  */
     entry = call ForwardingTable.lookupRoute(dao->target_option.target_prefix.s6_addr,
                                              dao->target_option.prefix_length);
-
     if (entry != NULL && entry->prefixlen == dao->target_option.prefix_length) {
       /* exact match in the forwarding table */
-      if (memcmp_rpl((uint8_t*)entry->next_hop.s6_addr, (uint8_t*)iph->ip6_src.s6_addr, 16) == TRUE) {
+      if (memcmp(entry->next_hop.s6_addr, iph->ip6_src.s6_addr, 16) == 0) {
 	// same old destination with same DTSN
       } else {
         /* SDH : shouldn't we, like, save the new route? */
@@ -387,10 +370,10 @@ generic module RPLDAORoutingEngineP(){
 
     // NO MODIFICATION TO DAO's RR-LIST NEEDED! -- just make sure I keep what I have and the prefix
     //printfUART("Continue! %d \n", ntohs(iph->ip6_plen));
-    memcpy_rpl((uint8_t*)&dao_msg->s_pkt.ip6_hdr, (uint8_t*)iph, sizeof(struct ip6_hdr));
+    memcpy(&dao_msg->s_pkt.ip6_hdr, iph, sizeof(struct ip6_hdr));
 
     // copy new payload information
-    memcpy_rpl((uint8_t*)&dao_msg->dao_base, (uint8_t*)payload, sizeof(struct dao_base_t));
+    memcpy(&dao_msg->dao_base, (uint8_t*)payload, sizeof(struct dao_base_t));
     dao_msg->v[0].iov_base = (uint8_t *)&dao_msg->dao_base;
     dao_msg->v[0].iov_len = ntohs(iph->ip6_plen);
     dao_msg->v[0].iov_next = NULL;
