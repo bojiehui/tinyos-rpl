@@ -35,10 +35,9 @@
 #include <lib6lowpan/lib6lowpan.h>
 #include <lib6lowpan/ip.h>
 #include <lib6lowpan/ip.h>
-
+#include "TestMessage.h"
 #include "UDPReport.h"
 #include "blip_printf.h"
-
 #define REPORT_PERIOD 10L
 
 module UDPEchoP {
@@ -52,8 +51,8 @@ module UDPEchoP {
 #endif
 #endif
 
-    interface UDP as Echo;
-    interface UDP as Status;
+    interface UDP as UDPSend;
+    interface UDP as UDPReceive; 
 
     interface Leds;
     
@@ -65,78 +64,110 @@ module UDPEchoP {
     interface Random;
   }
 
-} implementation {
-
+} implementation { 
   bool timerStarted;
   nx_struct udp_report stats;
   struct sockaddr_in6 route_dest;
+  radio_count_msg_t payload;
+  uint16_t sequence_nr = 0;
 
   event void Boot.booted() {
+    memclr((uint8_t *)&payload, sizeof(payload));
     call RadioControl.start();
     timerStarted = FALSE;
-
     call IPStats.clear();
-
-#ifdef REPORT_DEST
-    route_dest.sin6_port = htons(7000);
-    inet_pton6(REPORT_DEST, &route_dest.sin6_addr);
-    call StatusTimer.startOneShot(call Random.rand16() % (1024 * REPORT_PERIOD));
-#endif
 
 #ifdef TOSSIM
 #ifdef RPL_ROUTING
-    if (TOS_NODE_ID == BASESTATION_ID) {
+    if (TOS_NODE_ID == NODE1_ID) {  
       dbg ("UDPEchoP", "Basestation ID = %d.\n", TOS_NODE_ID);
-      call RootControl.setRoot();
+      if(TOS_NODE_ID == RPL_ROOT_ADDR){
+        call RootControl.setRoot();
+      }
+      call UDPReceive.bind(NODE1_PORT);
+      call StatusTimer.startOneShot(WAITTIME);
+      route_dest.sin6_port = htons(NODE3_PORT);
+      inet_pton6(PING_IP, &route_dest.sin6_addr);
+      dbg("UDPEchoP","Dest Node = %X:%X:%X on Port = %i   \n",ntohs(route_dest.sin6_addr.s6_addr16[0]), ntohs(route_dest.sin6_addr.s6_addr16[3]), ntohs(route_dest.sin6_addr.s6_addr16[7]));
     }
 #endif
 #endif
 
-    dbg("Boot", "booted: %i\n", TOS_NODE_ID);
-    call Echo.bind(7);
-    call Status.bind(7001);
 
+    if (TOS_NODE_ID != NODE1_ID) {
+      dbg ("UDPEchoP", "Node = %d.\n", TOS_NODE_ID);    
+      call UDPReceive.bind(NODE3_PORT);
+
+    }
   }
 
   event void RadioControl.startDone(error_t e) {
   }
 
   event void RadioControl.stopDone(error_t e) {
-
-  }
-
-  event void Status.recvfrom(struct sockaddr_in6 *from, void *data, 
-                             uint16_t len, struct ip6_metadata *meta) {
-
-  }
-
-  event void Echo.recvfrom(struct sockaddr_in6 *from, void *data, 
-                           uint16_t len, struct ip6_metadata *meta) {
-#ifdef PRINTFUART_ENABLED
-    int i;
-    uint8_t *cur = data;
-    call Leds.led0Toggle();
-    printf("Echo recv [%i]: ", len);
-    for (i = 0; i < len; i++) {
-      printf("%02x ", cur[i]);
-    }
-    printf("\n");
-#endif
-    call Echo.sendto(from, data, len);
   }
 
   event void StatusTimer.fired() {
+ 
     if (!timerStarted) {
-      call StatusTimer.startPeriodic(1024 * REPORT_PERIOD);
+      call StatusTimer.startPeriodic(PERIODIC_REQUEST);
       timerStarted = TRUE;
     }
 
-    stats.seqno++;
-    stats.sender = TOS_NODE_ID;
+    if (TOS_NODE_ID == NODE1_ID) {
+      if (stats.seqno == 51){
+        dbg ("MsgExchange","Pinged 50 times \n");
+        printf ("Pinged 50 times \n");
+        stats.seqno == 0;
+      }
+      else{
+        stats.seqno++;  
+        stats.sender = TOS_NODE_ID;
+        payload.counter = sequence_nr++;
+        payload.ist = WAITTIME;
+        payload.senderID = NODE1_ID;
+        payload.receiverID = RPL_ROOT_ADDR;
+        payload.data[0]= 0xFF;
+        payload.data[DATA_SIZE-1]= 0xFF;
 
-    call IPStats.get(&stats.ip);
-    call UDPStats.get(&stats.udp);
-    call Leds.led1Toggle();
-    call Status.sendto(&route_dest, &stats, sizeof(stats));
+        call Leds.led1Toggle();
+        dbg ("MsgExchange", "MsgExchang: Send: Node %i is sending UDP Message to Node = %X:%X:%X on Port = %i   \n",TOS_NODE_ID, ntohs(route_dest.sin6_addr.s6_addr16[0]), ntohs(route_dest.sin6_addr.s6_addr16[3]), ntohs(route_dest.sin6_addr.s6_addr16[7]), ntohs(route_dest.sin6_port) );
+        dbg ("MsgExchange", "Send at %s \n", sim_time_string());
+        dbg ("MsgRequests", "Request: Node: %i calls Node: %i SequenceNr: %i Time: %s \n",TOS_NODE_ID, NODE1_ID , payload.counter, sim_time_string());
+ 
+        call UDPSend.sendto(&route_dest, &payload, sizeof(payload));}
+    }
   }
-}
+ 
+  event void UDPReceive.recvfrom(struct sockaddr_in6 *from, void *data, 
+                                 uint16_t len, struct ip6_metadata *meta) {
+    //Binded to the listen port
+    static char print_buf3[128];
+    radio_count_msg_t * message_rec = (radio_count_msg_t *) data;
+
+    inet_ntop6(&from->sin6_addr, print_buf3, 128);
+    dbg ("MsgSuccessRecv", "Received Data from address = %s Port = %i SequenceNr: %i Time: %s\n", print_buf3, ntohs(from->sin6_port), message_rec->counter, sim_time_string());
+    dbg ("MsgExchange", "MsgExchange: Receive: Received Data from address = %s Port = %i\n", print_buf3, ntohs(from->sin6_port));
+    dbg ("MsgExchange", "MsgExchange: Time: %s \n", sim_time_string());
+    dbg ("MsgExchange", "MsgExchange: Receive: Received Data: %i \n", data);
+    //dbg ("MsgExchange", "Time: %s \n", sim_time_string());
+    dbg ("MsgExchange", "MsgExchange: Send: Sending response to address = %s Port = %i\n", print_buf3, ntohs(from->sin6_port));
+    //dbg ("MsgExchange", "MsgExchange: Time: %s \n", sim_time_string());
+    call UDPReceive.sendto(from, data, len);
+
+
+  }
+
+  event void UDPSend.recvfrom(struct sockaddr_in6 *from, void *data, 
+                              uint16_t len, struct ip6_metadata *meta) {
+    radio_count_msg_t * message_rec = (radio_count_msg_t *) data;
+    static char print_buf3[128];
+
+    inet_ntop6(&from->sin6_addr, print_buf3, 128);
+    dbg ("MsgExchange", "MsgExchange: Receive: Got response from address = %s Port = %i\n", print_buf3, ntohs(from->sin6_port));
+    dbg ("MsgExchange", "Receive at %s \n", sim_time_string());
+    dbg ("MsgRequests", "Response: Node: %i answered Node: %i SequenceNr: %i Time: %s \n",RPL_ROOT_ADDR, TOS_NODE_ID, message_rec->counter , sim_time_string());
+    /* dbg_clear("LogFile", "%i, %s, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i \n",TOS_NODE_ID, sim_time_string(), message_rec->counter, message_rec->ist, message_rec->rssi, message_rec->lqi, message_rec->power, message_rec->distance, message_rec->senderID, message_rec->receiverID, message_rec->voltage_sender, message_rec->voltage_receiver, message_rec->crc_ok, message_rec->data[0], message_rec->data[DATA_SIZE-1]); */
+  }
+
+  }
