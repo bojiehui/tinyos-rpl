@@ -157,9 +157,9 @@ generic module RPLDAORoutingEngineP(){
     }
 #endif
     /*
-    if (call RPLRouteInfo.getRank() != ROOT_RANK) {
+      if (call RPLRouteInfo.getRank() != ROOT_RANK) {
       call GenerateDAOTimer.startPeriodic(dao_rate);
-    }
+      }
     */
     //dao_rate *= 2;
     call GenerateDAOTimer.startPeriodic(dao_rate);
@@ -283,7 +283,7 @@ generic module RPLDAORoutingEngineP(){
   }
 
   event void IP_DAO.recv(struct ip6_hdr *iph, void *payload, 
-                          size_t len, struct ip6_metadata *meta) {
+                         size_t len, struct ip6_metadata *meta) {
     dao_entry_t* dao_msg;
     error_t error;
     // This is where the message is actually cast
@@ -298,8 +298,8 @@ generic module RPLDAORoutingEngineP(){
     if (!call RPLDAORouteInfo.getStoreState())
       return;
 #endif
-//     if (dao->target_option.prefix_length == 128)
-//       call Leds.led1Toggle();
+    //     if (dao->target_option.prefix_length == 128)
+    //       call Leds.led1Toggle();
     /* SDH : the two cases are the same...  */
     entry = call ForwardingTable.lookupRoute(dao->target_option.target_prefix.s6_addr,
                                              dao->target_option.prefix_length);
@@ -321,20 +321,20 @@ generic module RPLDAORoutingEngineP(){
     }else {
       /* new prefix */
       if (downwards_table_count == ROUTE_TABLE_SZ) {
-//         printfUART("RPLDAORouting:Downward table full -- not adding route\n");
+        //         printfUART("RPLDAORouting:Downward table full -- not adding route\n");
         return;
       }
-//       printfUART("RPLDAORouting: Add new route\n");
+      //       printfUART("RPLDAORouting: Add new route\n");
       if(dao->target_option.prefix_length > 0){
 	new_key = call ForwardingTable.addRoute(dao->target_option.target_prefix.s6_addr,
 						dao->target_option.prefix_length,
 						&iph->ip6_src,
 						RPL_IFACE);
 	/*
-	if (new_key == ROUTE_INVAL_KEY) {
+          if (new_key == ROUTE_INVAL_KEY) {
 	  call Leds.led1Toggle();
 	  return;
-	}
+          }
 	*/
       }
 
@@ -346,10 +346,10 @@ generic module RPLDAORoutingEngineP(){
       }
 
       /*
-      printfUART("DAO RX-- new prefix %d %d %d \n",
-                 downwards_table_count, 
-                 ntohs(dao->target_option.target_prefix.s6_addr16[7]), 
-                 ntohs(iph->ip6_src.s6_addr16[7]));
+        printfUART("DAO RX-- new prefix %d %d %d \n",
+        downwards_table_count, 
+        ntohs(dao->target_option.target_prefix.s6_addr16[7]), 
+        ntohs(iph->ip6_src.s6_addr16[7]));
       */
     }
 
@@ -384,10 +384,10 @@ generic module RPLDAORoutingEngineP(){
       call SendPool.put(dao_msg);
       return;
     } /*else {
-      if (!call DelayDAOTimer.isRunning())
+        if (!call DelayDAOTimer.isRunning())
 	call DelayDAOTimer.startOneShot(delay_dao);
-    }
-    */
+        }
+      */
   }
 
   command void RPLDAORouteInfo.newParent(){
@@ -398,4 +398,4 @@ generic module RPLDAORoutingEngineP(){
   }
 
   event void IPAddress.changed(bool global_valid) {}
-}
+  }

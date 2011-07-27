@@ -32,7 +32,7 @@
  */
 
 #include <lib6lowpan/6lowpan.h>
-
+#include "TestMessage.h"
 configuration UDPEchoC {
 
 } implementation {
@@ -46,21 +46,21 @@ configuration UDPEchoC {
   components IPStackC;
 
   UDPEchoP.RadioControl ->  IPStackC;
-  components new UdpSocketC() as Echo,
-    new UdpSocketC() as Status;
-  UDPEchoP.Echo -> Echo;
+  components new UdpSocketC() as UDPSend,
+    new UdpSocketC() as UDPReceive;
 
-  UDPEchoP.Status -> Status;
-
-  UDPEchoP.StatusTimer -> TimerMilliC;
+  UDPEchoP.UDPSend -> UDPSend;
+  UDPEchoP.UDPReceive -> UDPReceive;
+  
+UDPEchoP.StatusTimer -> TimerMilliC;
 
   components UdpC, IPDispatchC;
   UDPEchoP.IPStats -> IPDispatchC;
   UDPEchoP.UDPStats -> UdpC;
 
+#ifdef TOSSIM
 #ifdef RPL_ROUTING
   components RPLRoutingC;
-#ifdef TOSSIM
   UDPEchoP.RootControl -> RPLRoutingC;
 #endif
 #endif
@@ -76,10 +76,4 @@ configuration UDPEchoC {
 #ifndef  IN6_PREFIX
   components DhcpCmdC;
 #endif
-
-#ifdef PRINTFUART_ENABLED
-  components PrintfC;
-  components SerialStartC;
-#endif
-
 }
