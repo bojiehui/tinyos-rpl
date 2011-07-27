@@ -65,9 +65,9 @@ class GraphEvaluation:
             logger.warn("????HistGraph evaluation disabled")
 
         if GRAPH_EVAL_LIST.count("TopologyGraph") > 0:
-            tog = TopologyGraph()
+            tog = TopologyGraph(scenario_info)
             #tog.execute(executable_info, scenario_info)
-            tog.execute(scenario_info)	
+            tog.execute()	
             del tog
             gc.collect()
         else:

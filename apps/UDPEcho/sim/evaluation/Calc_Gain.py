@@ -12,13 +12,17 @@ SURROUNDING_MATERIAL_TOP    = 2
 SURROUNDING_MATERIAL_BANANA = 3
 
 class Calc_Gain:
+    
+    def __init__(self, si):
+
+        self.filenamebase = si.creatfilenamebase()
         
-    def calc_gain(self, filenamebase, id, id2):
-	
+    def calc_gain(self, id, id2):
+
         pl0 = 50
         gammaX10 = 20
 
-        # Pathloss exponent and constant for air-air
+# Pathloss exponent and constant for air-air
         pl0_aa = 70
         gammaX10_aa = 30
 
@@ -45,7 +49,7 @@ class Calc_Gain:
        # print "Distance between node",id,"and","node",id2,"is", self.calc_distance(id, id2)
             nodetype_dict = {} 
         
-            tfile = open(filenamebase + "_nodetype.pickle","r")
+            tfile = open(self.filenamebase + "_nodetype.pickle","r")
             nodetype_dict = pickle.load(tfile)
             tfile.close()
 
@@ -87,7 +91,7 @@ class Calc_Gain:
 
     def calc_distance(self, id, id2):
         id2xyz_dict = {} 
-        ifile = open(tosroot + "/apps/UDPEcho/sim/output/id2xyz.pickle","r")
+        ifile = open(self.filenamebase + "_id2xyz.pickle","r")
         id2xyz_dict = pickle.load(ifile)
         ifile.close()
         (x, y, z)   = id2xyz_dict[id]
