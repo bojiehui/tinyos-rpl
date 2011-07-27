@@ -94,39 +94,52 @@ class SimulationRun:
             sys.exit(1)
 
         #run
-        eventCtr = 0
-        eventPresent = True
-
-        sleepDelta = 0.00001
-
-        clockStartTime = datetime.now()
-        simStartTime   = self.t.time()
-
+        
         print "-"*10, "[[[[ Starting simulation of blip ]]]]", "-"*10
 
-        try:
+        if SIM_REALTIME:
+            eventCtr = 0
+            eventPresent = True
 
-            while True:
+            sleepDelta = 0.00001
 
-                clockCurrentTime = datetime.now()
-                clockTimeDifference = clockCurrentTime - clockStartTime
-                clockTimeDifferenceSec = (clockTimeDifference.seconds + clockTimeDifference.microseconds / float(1000000))
-                simCurrentTimeSec   = self.t.time() / float(self.t.ticksPerSecond())
-                sleepTime = simCurrentTimeSec - clockTimeDifferenceSec
+            clockStartTime = datetime.now()
+            simStartTime   = self.t.time()
+
+            try:
+                
+                while True:
+
+                    clockCurrentTime = datetime.now()
+                    clockTimeDifference = clockCurrentTime - clockStartTime
+                    clockTimeDifferenceSec = (clockTimeDifference.seconds + clockTimeDifference.microseconds / float(1000000))
+                    simCurrentTimeSec   = self.t.time() / float(self.t.ticksPerSecond())
+                    sleepTime = simCurrentTimeSec - clockTimeDifferenceSec
             
-                while sleepTime > 0:
-                    time.sleep(sleepDelta)
-                    sleepTime -= sleepDelta	
-                eventPresent = self.t.runNextEvent()
-                eventCtr = eventCtr + 1
+                    while sleepTime > 0:
+                        time.sleep(sleepDelta)
+                        sleepTime -= sleepDelta	
+                        eventPresent = self.t.runNextEvent()
+                        eventCtr = eventCtr + 1
 
-        except KeyboardInterrupt:
-            print ">>> Ctrl-C"
+            except KeyboardInterrupt:
+                print ">>> Ctrl-C"
 
-        except:
-            traceback.print_exc()
-            print ">>> Exception while simulating."
+            except:
+                traceback.print_exc()
+                print ">>> Exception while simulating."
+        else:
+            print ">>> No realtime simulation."
+            sim_time = SIM_TIME * self.t.ticksPerSecond() + self.t.time()
+            simStartTime   = self.t.time()
+            # time = t.time()+sim_time
+            # print "Time",sim_time
+            self.t.runNextEvent();
 
+            while (sim_time > self.t.time()):
+                self.t.runNextEvent()
+   
+                
        # finally:
             #throttle.finalize()
             #throttle.printStatistics()

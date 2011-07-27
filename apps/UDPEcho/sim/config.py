@@ -6,7 +6,7 @@ BASESTATION_ID    = 1     # NEEDS TO BE SETTED IN Makefile/TrickleSim.h AS WELL
 #TURNOFF_NODE_TIME   = SEC_BEFORE_INJECT + (SEC_AFTER_INJECT/10)
 #TURNOFF_NODE_TIME   = 120
 
-NODES_LIST = [5]
+NODES_LIST = [4]	#Number of nodes
 #NODES_LIST = [2, 4]
 #NODES_LIST = [2, 3, 4, 5, 6, 7, 8, 9, 10, 16, 25]
 #NODES_LIST = [2, 3, 4, 5, 6, 7, 8, 9]
@@ -29,7 +29,7 @@ NODES_LIST = [5]
 
 #DISTANCE_LIST     = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]
 
-DISTANCE_LIST     = [1] # FOR MOTELAB
+DISTANCE_LIST     = [80] # FOR MOTELAB
 
 #MONTE_CARLO_ITERATIONS = 2
 #MONTE_CARLO_ITERATIONS = 300
@@ -59,7 +59,8 @@ MIN_DISTANCE = 130
 MEAN_DISTANCE = 143
 MAX_DISTANCE = 153
 
-
+SIM_REALTIME = False
+SIM_TIME = 50
 
 # debug channels:
 stdout_channels = [
@@ -67,6 +68,11 @@ stdout_channels = [
     #"Trickle", sys
     #"TrickleTimes"
     #"Boot"
+    "MsgSuccessRecv"
+    ,"MsgRequests"
+    ,"UDPEchoP"
+    ,"IPForwardingEngine-PTr"
+    # ,"IPForwardingEngine-Routes"
     ]
 
 file_channels = [
@@ -142,7 +148,7 @@ if RANDOMIZE_TOPOLOGY == True and MONTECARLO_EVAL_LIST.count("MonteCarloContourG
 #To: Markus Becker <mab@comnets.uni-bremen.de>
 #Subject: Simulation/Evaluation finished
 
-#The simulation/evaluation has finished: 
+#The simulation/evaluation has finished:
 #"""
 
 #########
