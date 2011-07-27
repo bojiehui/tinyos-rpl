@@ -21,14 +21,15 @@ from sim.utils.helper import *
 tosroot = os.environ.get("TOSROOT")
 
 class TopologyGraph(Calc_Gain):
-#class TopologyGraph:
 
-    def __init__(self):
+    def __init__(self, si):
+        self.filenamebase = si.createfilenamebase()
         self.noise = -98
+        self.nodes = si.nodes
        
-    def Prr(self, filenamebase, id1, id2):
+    def Prr(self, id1, id2):
      
-        gain = self.calc_gain(filenamebase, id1, id2)
+        gain = self.calc_gain(id1, id2)
 	if not gain:
             SNR = 1
         else:
@@ -48,38 +49,38 @@ class TopologyGraph(Calc_Gain):
 	return prr
 
 
-    def execute(self,
-	         si):
-        filenamebase = si.createfilenamebase()
+    def execute(self):
+
         #PRR is calculated by PacketMetric, loading it here
        # prr = np.load(filenamebase+"_prr.npy")
 
         fig = plt.figure()
         ax = axes3d.Axes3D(fig, azim = 90, elev = 0)
-        
-   # def Plotting(self):
 
-        consist = np.zeros(si.nodes+1)
-        xarr = np.zeros(si.nodes+1)
-        yarr = np.zeros(si.nodes+1)
-        zarr = np.zeros(si.nodes+1)
+        consist = np.zeros(self.nodes+1)
+        xarr = np.zeros(self.nodes+1)
+        yarr = np.zeros(self.nodes+1)
+        zarr = np.zeros(self.nodes+1)
 
         packs = []
 
-        ifile = open(filenamebase+"_id2xyz.pickle", "r")
+        ifile = open(self.filenamebase+"_id2xyz.pickle", "r")
         id2xyz_dict = pickle.load(ifile)
         ifile.close()
 
-        for id1 in range(1, si.nodes+2):
+        for id1 in range(1, self.nodes+2):
             print id2xyz_dict[id1]
             (x, y, z) = id2xyz_dict[id1]
             xarr[id1-1] = x
             yarr[id1-1] = y
             zarr[id1-1] = z
-    
-        ax.set_xlim3d(0, 13)
-        ax.set_ylim3d(0, 13)
-        ax.set_zlim3d(0, 13)
+
+        xmin,xmax = ax.get_xlim3d()
+        ymin,ymax = ax.get_ylim3d()
+        zmin,zmax = ax.get_zlim3d()
+        ax.set_xlim3d(0, xmax+1)
+        ax.set_ylim3d(0, ymax+1)
+        ax.set_zlim3d(0, zmax+1)
 
         ax.set_xlabel('X [m]')
         ax.set_ylabel('Y [m]')
@@ -88,12 +89,12 @@ class TopologyGraph(Calc_Gain):
         ax.scatter(xarr,yarr,zarr,zdir='z')
 
 #### Start plotting lines####  
-        for id1 in range(1, si.nodes+2):
-            for id2 in range(1, si.nodes+2):
+        for id1 in range(1, self.nodes+2):
+            for id2 in range(1, self.nodes+2):
                 if id1 >= id2:
                     continue
 		
-                PRR = self.Prr(filenamebase, id1, id2)
+                PRR = self.Prr(id1, id2)
 		#print "node", id1, id2,"Prr = ",PRR  
                
                 if PRR == 0:
@@ -166,7 +167,7 @@ class TopologyGraph(Calc_Gain):
                      fancybox = 'True'
 			)
 
-        plt.savefig(filenamebase+"_topology.pdf")
+        plt.savefig(self.filenamebase+"_topology.pdf")
 
-        plt.show()
+        # plt.show()
 

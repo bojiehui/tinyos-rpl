@@ -51,7 +51,7 @@ class EvaluationRun:
         if GRAPH_EVAL == True:
             ge = GraphEvaluation()
             ge.execute(si)
-            #me.execute(si)
+
         else:
             logger.warn("????GraphEvaluation disabled")
 
