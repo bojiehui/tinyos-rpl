@@ -52,19 +52,19 @@ module UDPEchoP {
 #endif
 
     interface UDP as UDPSend;
-    interface UDP as UDPReceive; 
+    interface UDP as UDPReceive;
 
     interface Leds;
-    
+
     interface Timer<TMilli> as StatusTimer;
-   
+
     interface BlipStatistics<ip_statistics_t> as IPStats;
     interface BlipStatistics<udp_statistics_t> as UDPStats;
 
     interface Random;
   }
 
-} implementation { 
+} implementation {
   bool timerStarted;
   nx_struct udp_report stats;
   struct sockaddr_in6 route_dest;
@@ -79,13 +79,13 @@ module UDPEchoP {
 
 #ifdef TOSSIM
 #ifdef RPL_ROUTING
-    if (TOS_NODE_ID == NODE1_ID) {  
+    if (TOS_NODE_ID == NODE1_ID) {
       dbg ("UDPEchoP", "Basestation ID = %d.\n", TOS_NODE_ID);
       if(TOS_NODE_ID == RPL_ROOT_ADDR){
         call RootControl.setRoot();
       }
       call UDPReceive.bind(NODE1_PORT);
-      call StatusTimer.startOneShot(WAITTIME);
+      call StatusTimer.startOneShot(1024 * WAITTIME);
       route_dest.sin6_port = htons(NODE3_PORT);
       inet_pton6(PING_IP, &route_dest.sin6_addr);
       dbg("UDPEchoP","Dest Node = %X:%X:%X on Port = %i   \n",ntohs(route_dest.sin6_addr.s6_addr16[0]), ntohs(route_dest.sin6_addr.s6_addr16[3]), ntohs(route_dest.sin6_addr.s6_addr16[7]));
@@ -95,7 +95,7 @@ module UDPEchoP {
 
 
     if (TOS_NODE_ID != NODE1_ID) {
-      dbg ("UDPEchoP", "Node = %d.\n", TOS_NODE_ID);    
+      dbg ("UDPEchoP", "Node = %d.\n", TOS_NODE_ID);
       call UDPReceive.bind(NODE3_PORT);
 
     }
@@ -108,7 +108,7 @@ module UDPEchoP {
   }
 
   event void StatusTimer.fired() {
- 
+
     if (!timerStarted) {
       call StatusTimer.startPeriodic(PERIODIC_REQUEST);
       timerStarted = TRUE;
@@ -121,7 +121,7 @@ module UDPEchoP {
         stats.seqno == 0;
       }
       else{
-        stats.seqno++;  
+        stats.seqno++;
         stats.sender = TOS_NODE_ID;
         payload.counter = sequence_nr++;
         payload.ist = WAITTIME;
@@ -134,12 +134,12 @@ module UDPEchoP {
         dbg ("MsgExchange", "MsgExchang: Send: Node %i is sending UDP Message to Node = %X:%X:%X on Port = %i   \n",TOS_NODE_ID, ntohs(route_dest.sin6_addr.s6_addr16[0]), ntohs(route_dest.sin6_addr.s6_addr16[3]), ntohs(route_dest.sin6_addr.s6_addr16[7]), ntohs(route_dest.sin6_port) );
         dbg ("MsgExchange", "Send at %s \n", sim_time_string());
         dbg ("MsgRequests", "Request: Node: %i calls Node: %i SequenceNr: %i Time: %s \n",TOS_NODE_ID, NODE1_ID , payload.counter, sim_time_string());
- 
+
         call UDPSend.sendto(&route_dest, &payload, sizeof(payload));}
     }
   }
- 
-  event void UDPReceive.recvfrom(struct sockaddr_in6 *from, void *data, 
+
+  event void UDPReceive.recvfrom(struct sockaddr_in6 *from, void *data,
                                  uint16_t len, struct ip6_metadata *meta) {
     //Binded to the listen port
     static char print_buf3[128];
@@ -158,7 +158,7 @@ module UDPEchoP {
 
   }
 
-  event void UDPSend.recvfrom(struct sockaddr_in6 *from, void *data, 
+  event void UDPSend.recvfrom(struct sockaddr_in6 *from, void *data,
                               uint16_t len, struct ip6_metadata *meta) {
     radio_count_msg_t * message_rec = (radio_count_msg_t *) data;
     static char print_buf3[128];
