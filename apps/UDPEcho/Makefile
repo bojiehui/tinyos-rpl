@@ -27,20 +27,23 @@ PFLAGS += -DRPL_ROUTING -DRPL_STORING_MODE  -I$(TOSROOT)/tos/lib/net/rpl
 
 #For simulation
 # CFLAGS += -DRPL_OF_MRHOF
-CFLAGS += -DRPL_ROOT_ADDR=1
-CFLAGS += -DRPL_ROOT_PORT=1
-CFLAGS += -DPING_IP=\"fec0::4\"
 INCLUDES = -I..
 CFLAGS += $(INCLUDES)
-CFLAGS += -DNODE1_ID=1
 
+CFLAGS += -DPING_COUNT=5
+CFLAGS += -DNETWORK_SIZE=4
 
-CFLAGS += -DNODE1_PORT=1
+CFLAGS += -DRPL_ROOT_ADDR=1
+CFLAGS += -DRPL_ROOT_PORT=1
 
-CFLAGS += -DNODE3_PORT=3
+CFLAGS += -DSOURCE_NODE_ID=1
+CFLAGS += -DSOURCE_NODE_PORT=1
 
+CFLAGS += -DDEST_NODE_IP=\"fec0::2\"
+CFLAGS += -DDEST_NODE_PORT=2
 
 CFLAGS += -DBLIP_L2_RETRIES=3 -DBLIP_L2_DELAY=103
+
 # if you're using DHCP, set this to try and derive a 16-bit address
 # from the IA received from the server.  This will work if the server
 # gives out addresses from a /112 prefix.  If this is not set, blip

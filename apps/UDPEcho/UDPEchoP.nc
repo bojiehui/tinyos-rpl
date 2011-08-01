@@ -83,25 +83,24 @@ module UDPEchoP {
 
 #ifdef TOSSIM
 #ifdef RPL_ROUTING
-    if (TOS_NODE_ID == NODE1_ID) {
-      dbg ("UDPEchoP", "Basestation ID = %d.\n", TOS_NODE_ID);
+     if (TOS_NODE_ID == SOURCE_NODE_ID) {  
       if(TOS_NODE_ID == RPL_ROOT_ADDR){
+        dbg ("UDPEchoP", "Root ID = %d.\n", TOS_NODE_ID);
         call RootControl.setRoot();
       }
-      call UDPReceive.bind(NODE1_PORT);
-      call StatusTimer.startOneShot(1024 * WAITTIME);
-      route_dest.sin6_port = htons(NODE3_PORT);
-      inet_pton6(PING_IP, &route_dest.sin6_addr);
-      dbg("UDPEchoP","Dest Node = %X:%X:%X  \n",ntohs(route_dest.sin6_addr.s6_addr16[0]), ntohs(route_dest.sin6_addr.s6_addr16[3]), ntohs(route_dest.sin6_addr.s6_addr16[7]));
+ 
+      call UDPReceive.bind(SOURCE_NODE_PORT);
+      call StatusTimer.startOneShot(1024*WAITTIME);
+      route_dest.sin6_port = htons(DEST_NODE_PORT);
+      inet_pton6(DEST_NODE_IP, &route_dest.sin6_addr); 
+      dbg("UDPEchoP","Begin with Destination Node = %X:%X:%X on Port = %i   \n",ntohs(route_dest.sin6_addr.s6_addr16[0]), ntohs(route_dest.sin6_addr.s6_addr16[3]), ntohs(route_dest.sin6_addr.s6_addr16[7]), ntohs(route_dest.sin6_port));
     }
 #endif
 #endif
 
-
-    if (TOS_NODE_ID != NODE1_ID) {
-      dbg ("UDPEchoP", "Node = %d.\n", TOS_NODE_ID);
-      call UDPReceive.bind(NODE3_PORT);
-
+    if (TOS_NODE_ID != SOURCE_NODE_ID) {
+      dbg ("UDPEchoP", "Node = %d.\n", TOS_NODE_ID);    
+      call UDPReceive.bind(DEST_NODE_PORT);
     }
   }
 
@@ -118,18 +117,24 @@ module UDPEchoP {
       timerStarted = TRUE;
     }
 
-    if (TOS_NODE_ID == NODE1_ID) {
-      if (stats.seqno == 50){
-        //dbg ("MsgExchange","Pinged 50 times \n");
-        //printf ("Pinged 50 times \n");
-        //stats.seqno == 0;
-      }
-      else{
-        stats.seqno++;
+  if (TOS_NODE_ID == SOURCE_NODE_ID) {
+      
+        if (ntohs(route_dest.sin6_addr.s6_addr16[7]) > NETWORK_SIZE){
+             dbg("UDPEchoP","####################Finishing Ping################\n");
+           }
+        else if(stats.seqno == PING_COUNT){ 
+           route_dest.sin6_addr.s6_addr16[7] = htons((ntohs(route_dest.sin6_addr.s6_addr16[7]))+1);
+           dbg("UDPEchoP","Updated Dest Node ID = %X on Port = %i   \n",ntohs(route_dest.sin6_addr.s6_addr16[7]), ntohs(route_dest.sin6_port));
+      
+           stats.seqno = 0; 
+           sequence_nr = 0;
+        }
+        else {
+        stats.seqno++;  
         stats.sender = TOS_NODE_ID;
         payload.counter = sequence_nr++;
         payload.ist = WAITTIME;
-        payload.senderID = NODE1_ID;
+        payload.senderID = SOURCE_NODE_ID;
         payload.receiverID = RPL_ROOT_ADDR;
         payload.data[0]= 0xFF;
         payload.data[DATA_SIZE-1]= 0xFF;
@@ -137,7 +142,7 @@ module UDPEchoP {
         call Leds.led1Toggle();
         dbg ("MsgExchange", "MsgExchang: Send: Node %i is sending UDP Message to Node = %X:%X:%X on Port = %i   \n",TOS_NODE_ID, ntohs(route_dest.sin6_addr.s6_addr16[0]), ntohs(route_dest.sin6_addr.s6_addr16[3]), ntohs(route_dest.sin6_addr.s6_addr16[7]), ntohs(route_dest.sin6_port) );
         dbg ("MsgExchange", "Send at %s \n", sim_time_string());
-        dbg ("MsgRequests", "Request: Node: %i calls Node: %i SequenceNr: %i Time: %s \n",TOS_NODE_ID, NODE1_ID , payload.counter, sim_time_string());
+	    dbg ("MsgRequests", "Request: Node: %i calls Node: %X SequenceNr: %i Time: %s \n",TOS_NODE_ID, ntohs(route_dest.sin6_addr.s6_addr16[7]), payload.counter, sim_time_string());
 
         call UDPSend.sendto(&route_dest, &payload, sizeof(payload));}
     }
@@ -170,7 +175,7 @@ module UDPEchoP {
     inet_ntop6(&from->sin6_addr, print_buf3, 128);
     dbg ("MsgExchange", "MsgExchange: Receive: Got response from address = %s Port = %i\n", print_buf3, ntohs(from->sin6_port));
     dbg ("MsgExchange", "Receive at %s \n", sim_time_string());
-    dbg ("MsgRequests", "Response: Node: %i answered Node: %i SequenceNr: %i Time: %s\n",RPL_ROOT_ADDR, TOS_NODE_ID, message_rec->counter , sim_time_string());
+    dbg ("MsgRequests", "Response: Node: %s answered Node: %i SequenceNr: %i Time: %s\n",print_buf3, TOS_NODE_ID, message_rec->counter , sim_time_string());
   
 }
 
