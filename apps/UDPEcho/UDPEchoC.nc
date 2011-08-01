@@ -42,7 +42,8 @@ configuration UDPEchoC {
   UDPEchoP.Boot -> MainC;
   UDPEchoP.Leds -> LedsC;
 
-  components new TimerMilliC();
+  components new TimerMilliC() as StatusTimer;
+  components new TimerMilliC() as DelayTimer;
   components IPStackC;
 
   UDPEchoP.RadioControl ->  IPStackC;
@@ -51,8 +52,9 @@ configuration UDPEchoC {
 
   UDPEchoP.UDPSend -> UDPSend;
   UDPEchoP.UDPReceive -> UDPReceive;
-  
-UDPEchoP.StatusTimer -> TimerMilliC;
+
+  UDPEchoP.StatusTimer -> StatusTimer;
+  UDPEchoP.DelayTimer -> DelayTimer;
 
   components UdpC, IPDispatchC;
   UDPEchoP.IPStats -> IPDispatchC;

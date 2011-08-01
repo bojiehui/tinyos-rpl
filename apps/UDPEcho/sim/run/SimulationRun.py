@@ -119,8 +119,8 @@ class SimulationRun:
                     while sleepTime > 0:
                         time.sleep(sleepDelta)
                         sleepTime -= sleepDelta	
-                        eventPresent = self.t.runNextEvent()
-                        eventCtr = eventCtr + 1
+                    eventPresent = self.t.runNextEvent()
+                    eventCtr = eventCtr + 1
 
             except KeyboardInterrupt:
                 print ">>> Ctrl-C"
@@ -147,7 +147,7 @@ class SimulationRun:
 
         logger.info("SimulationRun took: " + str(datetime.now()-starttime))
         logger.info("Finish model time: " + self.t.timeStr())
-
+        f.close()
 
 if __name__ == "__main__":
     try:

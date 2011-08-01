@@ -57,6 +57,7 @@ module UDPEchoP {
     interface Leds;
 
     interface Timer<TMilli> as StatusTimer;
+    interface Timer<TMilli> as DelayTimer;	
 
     interface BlipStatistics<ip_statistics_t> as IPStats;
     interface BlipStatistics<udp_statistics_t> as UDPStats;
@@ -69,6 +70,9 @@ module UDPEchoP {
   nx_struct udp_report stats;
   struct sockaddr_in6 route_dest;
   radio_count_msg_t payload;
+  struct sockaddr_in6 resp_dest;
+  void *resp_data;
+  uint16_t resp_len;
   uint16_t sequence_nr = 0;
 
   event void Boot.booted() {
@@ -88,7 +92,7 @@ module UDPEchoP {
       call StatusTimer.startOneShot(1024 * WAITTIME);
       route_dest.sin6_port = htons(NODE3_PORT);
       inet_pton6(PING_IP, &route_dest.sin6_addr);
-      dbg("UDPEchoP","Dest Node = %X:%X:%X on Port = %i   \n",ntohs(route_dest.sin6_addr.s6_addr16[0]), ntohs(route_dest.sin6_addr.s6_addr16[3]), ntohs(route_dest.sin6_addr.s6_addr16[7]));
+      dbg("UDPEchoP","Dest Node = %X:%X:%X  \n",ntohs(route_dest.sin6_addr.s6_addr16[0]), ntohs(route_dest.sin6_addr.s6_addr16[3]), ntohs(route_dest.sin6_addr.s6_addr16[7]));
     }
 #endif
 #endif
@@ -115,10 +119,10 @@ module UDPEchoP {
     }
 
     if (TOS_NODE_ID == NODE1_ID) {
-      if (stats.seqno == 51){
-        dbg ("MsgExchange","Pinged 50 times \n");
-        printf ("Pinged 50 times \n");
-        stats.seqno == 0;
+      if (stats.seqno == 50){
+        //dbg ("MsgExchange","Pinged 50 times \n");
+        //printf ("Pinged 50 times \n");
+        //stats.seqno == 0;
       }
       else{
         stats.seqno++;
@@ -144,17 +148,17 @@ module UDPEchoP {
     //Binded to the listen port
     static char print_buf3[128];
     radio_count_msg_t * message_rec = (radio_count_msg_t *) data;
+	memcpy(&resp_dest,from,sizeof(struct sockaddr_in6));
+
+    resp_data = data;
+    resp_len = len;
 
     inet_ntop6(&from->sin6_addr, print_buf3, 128);
     dbg ("MsgSuccessRecv", "Received Data from address = %s Port = %i SequenceNr: %i Time: %s\n", print_buf3, ntohs(from->sin6_port), message_rec->counter, sim_time_string());
-    dbg ("MsgExchange", "MsgExchange: Receive: Received Data from address = %s Port = %i\n", print_buf3, ntohs(from->sin6_port));
-    dbg ("MsgExchange", "MsgExchange: Time: %s \n", sim_time_string());
-    dbg ("MsgExchange", "MsgExchange: Receive: Received Data: %i \n", data);
-    //dbg ("MsgExchange", "Time: %s \n", sim_time_string());
-    dbg ("MsgExchange", "MsgExchange: Send: Sending response to address = %s Port = %i\n", print_buf3, ntohs(from->sin6_port));
-    //dbg ("MsgExchange", "MsgExchange: Time: %s \n", sim_time_string());
-    call UDPReceive.sendto(from, data, len);
+    dbg ("MsgExchange", "MsgExchange: Send: Sending response to address = %s Port = %i @ %s\n", print_buf3, ntohs(from->sin6_port),sim_time_string());
 
+    call DelayTimer.startOneShot(1);
+    //call UDPReceive.sendto(from, data, len);
 
   }
 
@@ -166,8 +170,14 @@ module UDPEchoP {
     inet_ntop6(&from->sin6_addr, print_buf3, 128);
     dbg ("MsgExchange", "MsgExchange: Receive: Got response from address = %s Port = %i\n", print_buf3, ntohs(from->sin6_port));
     dbg ("MsgExchange", "Receive at %s \n", sim_time_string());
-    dbg ("MsgRequests", "Response: Node: %i answered Node: %i SequenceNr: %i Time: %s \n",RPL_ROOT_ADDR, TOS_NODE_ID, message_rec->counter , sim_time_string());
-    /* dbg_clear("LogFile", "%i, %s, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i, %i \n",TOS_NODE_ID, sim_time_string(), message_rec->counter, message_rec->ist, message_rec->rssi, message_rec->lqi, message_rec->power, message_rec->distance, message_rec->senderID, message_rec->receiverID, message_rec->voltage_sender, message_rec->voltage_receiver, message_rec->crc_ok, message_rec->data[0], message_rec->data[DATA_SIZE-1]); */
-  }
+    dbg ("MsgRequests", "Response: Node: %i answered Node: %i SequenceNr: %i Time: %s\n",RPL_ROOT_ADDR, TOS_NODE_ID, message_rec->counter , sim_time_string());
+  
+}
 
+event void DelayTimer.fired() {
+    
+    dbg ("MsgExchange", "MsgExchang: Timer fired. Send to Node = %X:%X:%X on Port = %i   \n", ntohs(resp_dest.sin6_addr.s6_addr16[0]), ntohs(resp_dest.sin6_addr.s6_addr16[3]), ntohs(resp_dest.sin6_addr.s6_addr16[7]), ntohs(resp_dest.sin6_port) );
+
+    call UDPReceive.sendto(&resp_dest, resp_data, resp_len);
+  }
   }
