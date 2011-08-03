@@ -1,173 +1,174 @@
-import os
-import math
+import re
 import pickle
+import math
+
 import numpy as np
-from array import *
-from scipy.special import erfc
 
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 import matplotlib.colors as col
-from mpl_toolkits.mplot3d import axes3d, Axes3D
-from mpl_toolkits.mplot3d.art3d import Line3D
+from matplotlib.text import Text
 from matplotlib.lines import Line2D
+from matplotlib.figure import SubplotParams
 
-
-from sim.scenarios.Scenario import Scenario
-from sim.evaluation.Calc_Gain import Calc_Gain
 from sim.utils.helper import *
+from sim.scenarios.ScenarioInformation import *
+#from sim.scenarios.ExecutableInformation import *
 
-tosroot = os.environ.get("TOSROOT")
+class TopologyGraph:
+    def __init__(self):
+        pass
 
-class TopologyGraph(Calc_Gain):
-
-    def __init__(self, si):
-        self.filenamebase = si.createfilenamebase()
-        self.noise = -98
-        self.nodes = si.nodes
-       
-    def Prr(self, id1, id2):
-     
-        gain = self.calc_gain(id1, id2)
-	if not gain:
-            SNR = 1
-        else:
-            SNR  = (0 - gain) - self.noise
-        
-        beta1 = 0.9794
-        beta2 = 2.3851
-        X = SNR-beta2
-        PSE = 0.5*erfc(beta1*X/math.sqrt(2))
-        prr = round(pow(1-PSE, 23*2),2)
-	
-        if (prr > 1):
-            prr = 1.1
-        elif (prr < 0):
-            prr = -0.1
-        
-	return prr
-
-
-    def execute(self):
-
+    def execute(self,
+               # ei,
+                si):
+  
+        filenamebase = si.createfilenamebase()
         #PRR is calculated by PacketMetric, loading it here
-       # prr = np.load(filenamebase+"_prr.npy")
+        prr = np.load(filenamebase+"_prr.npy")
 
-        fig = plt.figure()
-        ax = axes3d.Axes3D(fig, azim = 90, elev = 0)
+        print "="*40
+        print "Executing TopologyGraph:"
+        print "filenamebase\t\t", filenamebase
+        print "="*40
 
-        consist = np.zeros(self.nodes+1)
-        xarr = np.zeros(self.nodes+1)
-        yarr = np.zeros(self.nodes+1)
-        zarr = np.zeros(self.nodes+1)
+        consist = np.zeros(si.nodes+1)
+        xarr = np.zeros(si.nodes+1)
+        yarr = np.zeros(si.nodes+1)
 
         packs = []
 
-        ifile = open(self.filenamebase+"_id2xyz.pickle", "r")
+        ifile = open(filenamebase+"_id2xyz.pickle", "r")
         id2xyz_dict = pickle.load(ifile)
         ifile.close()
 
-        for id1 in range(1, self.nodes+2):
-            print id2xyz_dict[id1]
+        for id1 in range(1, si.nodes+1):
             (x, y, z) = id2xyz_dict[id1]
-            xarr[id1-1] = x
-            yarr[id1-1] = y
-            zarr[id1-1] = z
+            xarr[id1] = x
+            yarr[id1] = y
 
-        xmin,xmax = ax.get_xlim3d()
-        ymin,ymax = ax.get_ylim3d()
-        zmin,zmax = ax.get_zlim3d()
-        ax.set_xlim3d(0, xmax+1)
-        ax.set_ylim3d(0, ymax+1)
-        ax.set_zlim3d(0, zmax+1)
+        for id1 in range(1, si.nodes+1):
+            for id2 in range(1, si.nodes+1):
 
-        ax.set_xlabel('X [m]')
-        ax.set_ylabel('Y [m]')
-        ax.set_zlabel('Z [m]')
+	            if prr[id1][id2] != np.nan:
+                        if prr[id1][id2] > 0:
+                            linecolor = 'r'
+                
+                            if prr[id1][id2] >= 0.5:
+                                linecolor = 'b'
 
-        ax.scatter(xarr,yarr,zarr,zdir='z')
+                            if prr[id1][id2] >= 0.95:
+                                linecolor = 'g'
 
-#### Start plotting lines####  
-        for id1 in range(1, self.nodes+2):
-            for id2 in range(1, self.nodes+2):
-                if id1 >= id2:
-                    continue
-		
-                PRR = self.Prr(id1, id2)
-		#print "node", id1, id2,"Prr = ",PRR  
-               
-                if PRR == 0:
-                    linecolor = None	
-	            alpha = 0.0
-
-                if PRR > 0 and PRR < 0.5:
-                    linecolor = None
-		    alpha = 1.0
-                        
-                if PRR >= 0.5 and PRR < 0.95:
-                    linecolor = 'b'
-                    alpha = 1.0
-
-                if PRR >= 0.95 and PRR < 0.99:
-                    linecolor = 'g'
-                    alpha = 1.0
-
-                if PRR >= 0.99:
-                    linecolor = 'r'
-		    alpha = 1.0
+                            if prr[id1][id2] >= 0.99:
+                                linecolor = 'k'
              
-                (x, y, z)   = id2xyz_dict[id1]
-                (x2, y2, z2) = id2xyz_dict[id2]
+                            (x, y, z)    = id2xyz_dict[id1]
+                            (x2, y2, z2) = id2xyz_dict[id2]
           
-                packs.append(
-                    Line3D([x, x2],
-                           [y, y2],
-                           [z, z2],
-                           color=linecolor,
-                           linewidth=0.5,
-			   alpha=alpha
-                        ))
-  
-        plt.title('Topology\n( 33 nodes')
+                            packs.append(
+                                Line2D([x, x2],
+                                       [y, y2],
+                                       color=linecolor,
+                                       linewidth=1)
+                                 )
 
-       # ax = fig.add_subplot(111)
+        for i in range(1, si.nodes+1):
+            (x, y, z) = id2xyz_dict[i]
+
+            if math.sqrt(si.nodes) >= 10:
+                fs = 7
+            else:
+                fs = 12
+            packs.append(
+                Text(x,
+                     y,
+                     str(i),
+                     color='w',
+                     fontweight='bold',
+                     backgroundcolor='k',
+                     fontsize=fs,
+                     verticalalignment='center',
+                     horizontalalignment='center',
+                     alpha=1,
+                     bbox=dict(facecolor='k'))
+                 )
+
+        fig = plt.figure(figsize=(13, 10),
+                         subplotpars = SubplotParams(left = 0.05,
+                                                     bottom = 0.05,
+                                                     top = 0.95,
+                                                     right = 0.75))
+
+        ax = fig.add_subplot(111)
+
         for p in packs:
            ax.add_artist(p)
            p.set_clip_box(ax.bbox)
+
+        text = "#Nodes: " + str(si.nodes) + ", " + \
+            "Size: " + str(si.distance) 
+            #+ ", " + \
+            #"K: " + str(ei.defines["DISTRIBUTION_TRICKLE_K"])
+
+        plt.title('Topology\n(' + text +')')
+
+        #plt.yticks(range(0, si.sqr_nodes+1))
+        #plt.xticks(range(0, si.si.sqr_nodes+1))
+        if math.sqrt(si.nodes) >= 10:
+            lim_delta = 1
+        else:
+            lim_delta = .2
+
+        #plt.xlim(-lim_delta, si.sqr_nodes+lim_delta)
+        #plt.ylim(-lim_delta, si.sqr_nodes+lim_delta)
+
+        if max(xarr) > max(yarr):
+            max_xy = max(xarr)
+        else:
+            max_xy = max(yarr)
+
+        plt.xlim(-lim_delta, max_xy+lim_delta)
+        plt.ylim(-lim_delta, max_xy+lim_delta)
+
+        #plt.xlabel("x index")
+        #plt.ylabel("y index")
+        plt.xlabel("x [m]")
+        plt.ylabel("y [m]")
           
-      #  prr_gt_0   = Line2D([0, 0.1],
-      #                      [0, 0.1],
-      #                      color='r',
-      #                      linewidth=0.5)
-        prr_lt_0_5 = Line2D([0, 0.1],
-                            [0, 0.1],
+        prr_gt_0   = Line2D([0, 1],
+                            [0, 1],
+                            color='r',
+                            linewidth=1)
+        prr_lt_0_5 = Line2D([0, 1],
+                            [0, 1],
                             color='b',
-                            linewidth=0.8)
+                            linewidth=1)
         prr_lt_0_95 = Line2D([0, 1],
                              [0, 1],
                              color='g',
-                             linewidth=0.8)
+                             linewidth=1)
         prr_gt_0_99 = Line2D([0, 1],
                              [0, 1],
-                             color='r',
-                             linewidth=0.8)
+                             color='k',
+                             linewidth=1)
             
-        plt.legend( (#prr_gt_0,
+        plt.legend( (prr_gt_0,
                      prr_lt_0_5,
                      prr_lt_0_95,
                      prr_gt_0_99,
                     ),
-                    (#'0 < PRR < 0.5',
-                     '0.5  <= PRR < 0.95',
-                     '0.95 <= PRR < 0.99',
-                     '0.99 <= PRR <= 1',
+                    ('0 < PRR < 0.5',
+                     '0.5  < PRR < 0.95',
+                     '0.95 < PRR < 0.99',
+                     '0.99 < PRR < 1',
                      ),
-                     loc = 2,
-                     fancybox = 'True'
-			)
+#                       'lower right',
+                    bbox_to_anchor=(1.02, 1),
+                    loc = 2,
+                    borderaxespad=0. ,
+#                       loc = (.9, .5),
+                     fancybox = 'True')
 
-        plt.savefig(self.filenamebase+"_topology.pdf")
-
-        # plt.show()
-
+        plt.savefig(filenamebase+"_topology.pdf")

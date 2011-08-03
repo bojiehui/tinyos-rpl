@@ -7,6 +7,7 @@ from sim.evaluation.graph.sn.SN import *
 #from sim.evaluation.graph.contour.ContourGraphSentPackets import *
 #from sim.evaluation.graph.hist.HistGraph import *
 from sim.evaluation.graph.topology.TopologyGraph import *
+from sim.evaluation.graph.topology.TopologyGraph_3D import *
 
 from sim.utils.helper import *
 from sim.config import *
@@ -65,9 +66,12 @@ class GraphEvaluation:
             logger.warn("????HistGraph evaluation disabled")
 
         if GRAPH_EVAL_LIST.count("TopologyGraph") > 0:
-            tog = TopologyGraph(scenario_info)
+            if SCENARIO == "ContainerScenario":
+                tog = TopologyGraph_3D()
+            else:
+                tog = TopologyGraph()
             #tog.execute(executable_info, scenario_info)
-            tog.execute()	
+            tog.execute(scenario_info)	
             del tog
             gc.collect()
         else:
