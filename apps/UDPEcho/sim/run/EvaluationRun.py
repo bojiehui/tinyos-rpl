@@ -12,7 +12,7 @@ import logging.config
 import matplotlib
 matplotlib.use('agg')
 
-#from sim.evaluation.metric.MetricEvaluation import *
+from sim.evaluation.metric.MetricEvaluation import *
 from sim.evaluation.graph.GraphEvaluation import *
 from sim.evaluation.graph.topology.TopologyGraph import *
 from sim.evaluation.Rtt import *
@@ -37,9 +37,6 @@ class EvaluationRun:
         logger.info("Executing EvaluationRun:")
         logger.info(str(si))
         logger.info("="*40)
-
-        rtt = Rtt()
-        rtt.execute(si)
 
         if METRIC_EVAL == True:
             me = MetricEvaluation()

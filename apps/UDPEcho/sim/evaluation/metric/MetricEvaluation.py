@@ -15,7 +15,7 @@ class MetricEvaluation:
         logger.info(">"*10 + " New metric evaluation" + "<"*10)
 
     def execute(self,
-                executable_info,
+               # executable_info,
                 scenario_info):
 
         logger.info("="*40)
@@ -23,6 +23,7 @@ class MetricEvaluation:
         logger.info("="*40)
 
         pm = PacketMetric()
-        pm.execute(executable_info, scenario_info)
+        #pm.execute(executable_info, scenario_info)
+        pm.execute(scenario_info)
         del pm
         gc.collect()
