@@ -88,7 +88,7 @@ class ScenarioInformation:
     def __str__(self):
         return "="*40 + "\n" \
             "Start:\t\t\t" + str(self.startdate) \
-            + "\nnodes\t\t" + str(self.nodes) \
+            + "\nnodes\t\t\t" + str(self.nodes) \
             + "\ndistance\t\t" + str(self.distance) \
             + "\nrun\t\t\t" + str(self.run) \
             + "\nrandomize_boot\t\t" + str(self.randomize_boot) \

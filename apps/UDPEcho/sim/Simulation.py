@@ -167,7 +167,7 @@ if __name__ == "__main__":
 
     ss = SimulationSuite(optionsp.datetime)
 
-    if not optionsp.simulation:
+    if not optionsp.simulation and not optionsp.evaluation:
         optionsp.simulation = True
 
     if optionsp.simulation:
