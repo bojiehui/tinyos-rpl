@@ -36,7 +36,7 @@ class Scenario():
                   0 - gain)# negative gain
     
     def calc_gain(self, id, id2):
-       # print "Distance between node",id,"and","node",id2,"is", self.calc_distance(id, id2)
+        #print "Distance between node",id,"and","node",id2,"is", self.calc_distance(id, id2)
     
         return self.pl0 + self.gammaX10 * math.log(self.calc_distance(id, id2), 10)
 
@@ -47,7 +47,7 @@ class Scenario():
 
     def calc_neighbors(self, id, cutoff_distance):
         neigh = 0
-        for id2 in range(2, self.nodes+2):
+        for id2 in range(2, self.nodes+1):
             if id == id2:
                 # do not count the same node
                 continue

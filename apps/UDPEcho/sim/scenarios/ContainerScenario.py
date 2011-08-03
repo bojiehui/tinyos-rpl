@@ -30,19 +30,19 @@ class ContainerScenario(Scenario):
 
 # Pathloss exponent and constant for air-top        
         self.pl0_at = 75
-        self.gammaX10_at = 40
+        self.gammaX10_at = 30
 
 # Pathloss exponent and constant for top-top        
         self.pl0_tt = 85
-        self.gammaX10_tt = 54
+        self.gammaX10_tt = 40
 
 # Pathloss exponent and constant for top-banana
-	self.pl0_tb = 89
-        self.gammaX10_tb = 56
+	self.pl0_tb = 100
+        self.gammaX10_tb = 60
 
 # Pathloss exponent and constant for banana-banana
-        self.pl0_bb = 92.5
-        self.gammaX10_bb = 60
+        self.pl0_bb = 110
+        self.gammaX10_bb = 70
 
         self.filenamebase = si.createfilenamebase()
 
@@ -51,12 +51,12 @@ class ContainerScenario(Scenario):
 	self.nodetype_dict = {}	
 
     def connect_neighbors(self, id, id2):
-        for id2 in range(1, self.nodes+2):
+        for id2 in range(1, self.nodes+1):
             if id == id2:
                 # do not connect with the same node
                 continue
             gain = self.calc_gain(id, id2)
-          #  print "gain between", id, id2, "=",gain,"db"
+            # print "gain between", id, id2, "=",gain,"db"
             if not gain:	
            # print id,"and",id2,"are not neighbours."
                 pass	  
@@ -83,7 +83,7 @@ class ContainerScenario(Scenario):
                 return self.pl0_tt + self.gammaX10_tt * math.log(self.calc_distance(id, id2), 10)	
             elif self.nodetype_dict[id2] == 3:
 		#print "top-banana id:", id,id2	
-                  return self.pl0_tb + self.gammaX10_tb * math.log(self.calc_distance(id, id2), 10)
+                return self.pl0_tb + self.gammaX10_tb * math.log(self.calc_distance(id, id2), 10)
 
         elif self.nodetype_dict[id] == 3:
             if self.nodetype_dict[id2] == 2:
@@ -98,7 +98,6 @@ class ContainerScenario(Scenario):
         (x2, y2, z2) = self.id2xyz_dict[id2]
         distance = math.sqrt((x-x2)**2 + (y-y2)**2 + (z-z2)**2)
 	#print "The distance between node",id, id2,"is",distance,"m"
-	#print "The type of link is",nodetype_1,"-->",nodetype_2
 	return distance
 
 
@@ -111,25 +110,25 @@ class ContainerScenario(Scenario):
         pickle.dump(self.nodetype_dict, tf)
         tf.close()
 
-        for id in range(1, self.nodes+2):
-            for id2 in range(1, self.nodes+2):
+        for id in range(1, self.nodes+1):
+            for id2 in range(1, self.nodes+1):
                 if id == id2:
                     continue
                 self.connect_neighbors(id, id2)
 
-        for id in range(1, self.nodes+2):
+        for id in range(1, self.nodes+1):
             for i in range(0, 10000):
                 self.t.getNode(id).addNoiseTraceReading(-98)
 
-        for id in range(1, self.nodes+2):
+        for id in range(1, self.nodes+1):
             self.t.getNode(id).createNoiseModel()
 
-        neighbors_min  = np.zeros(self.nodes+2)
-        neighbors_mean = np.zeros(self.nodes+2)
-        neighbors_max  = np.zeros(self.nodes+2)
+        neighbors_min  = np.zeros(self.nodes+1)
+        neighbors_mean = np.zeros(self.nodes+1)
+        neighbors_max  = np.zeros(self.nodes+1)
 
 
-        for id in range(1, self.nodes+2):
+        for id in range(1, self.nodes+1):
             neighbors_min [id] = self.calc_neighbors(id, MIN_DISTANCE)
             neighbors_mean[id] = self.calc_neighbors(id, MEAN_DISTANCE)
             neighbors_max [id] = self.calc_neighbors(id, MAX_DISTANCE)
@@ -181,7 +180,7 @@ class ContainerScenario(Scenario):
 	]
         
 
-        for id in range(1, self.nodes+2):
+        for id in range(1, self.nodes+1):
             x = n[id-1][0][0]
 	    y = n[id-1][0][1]
 	    z = n[id-1][0][2]
