@@ -33,9 +33,9 @@ class TopologyGraph:
         print "filenamebase\t\t", filenamebase
         print "="*40
 
-        consist = np.zeros(si.nodes+1)
-        xarr = np.zeros(si.nodes+1)
-        yarr = np.zeros(si.nodes+1)
+        # consist = np.zeros(si.nodes+1)
+        xarr = np.zeros(si.nodes+2)
+        yarr = np.zeros(si.nodes+2)
 
         packs = []
 
@@ -43,13 +43,13 @@ class TopologyGraph:
         id2xyz_dict = pickle.load(ifile)
         ifile.close()
 
-        for id1 in range(1, si.nodes+1):
+        for id1 in range(1, si.nodes+2):
             (x, y, z) = id2xyz_dict[id1]
             xarr[id1] = x
             yarr[id1] = y
 
-        for id1 in range(1, si.nodes+1):
-            for id2 in range(1, si.nodes+1):
+        for id1 in range(1, si.nodes+2):
+            for id2 in range(1, si.nodes+2):
 
 	            if prr[id1][id2] != np.nan:
                         if prr[id1][id2] > 0:
@@ -74,7 +74,7 @@ class TopologyGraph:
                                        linewidth=1)
                                  )
 
-        for i in range(1, si.nodes+1):
+        for i in range(1, si.nodes+2):
             (x, y, z) = id2xyz_dict[i]
 
             if math.sqrt(si.nodes) >= 10:

@@ -70,4 +70,6 @@ class Rtt:
                 n_dict = []
                 rtt_dict = []
                 pl_dict = []
-            np.save(filenamebase+"_meanrtt.npy", mean_dict)
+        mean_dict.insert(0,0)
+        mean_dict.insert(0,0)
+        np.save(filenamebase+"_meanrtt.npy", mean_dict)

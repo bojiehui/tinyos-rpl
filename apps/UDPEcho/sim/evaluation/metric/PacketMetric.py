@@ -89,8 +89,8 @@ class PacketMetric:
 
         f.close()
 
-        for id1 in range(1, si.nodes+1):
-            for id2 in range(1, si.nodes+1):
+        for id1 in range(1, si.nodes+2):
+            for id2 in range(1, si.nodes+2):
                 if id1 != id2:
                 # prr_rate[id1][id2] = (rec_packets[id1][id2] /
                 #                       float(sent_packets[id2]))

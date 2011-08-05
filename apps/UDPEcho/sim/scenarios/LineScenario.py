@@ -42,5 +42,5 @@ class LineScenario(Scenario):
             #self.xyz2id_dict[x]    = {}
             #self.xyz2id_dict[x][y][z] = id
 #	    self.nodetype_dict[id] = "air"	
-
+        self.id2xyz_dict[id] = (x, y, z)
         self.setup_radio_general()

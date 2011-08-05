@@ -15,7 +15,6 @@ matplotlib.use('agg')
 from sim.evaluation.metric.MetricEvaluation import *
 from sim.evaluation.graph.GraphEvaluation import *
 from sim.evaluation.graph.topology.TopologyGraph import *
-from sim.evaluation.Rtt import *
 
 from sim.config import *
 

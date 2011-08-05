@@ -3,7 +3,7 @@ import logging
 
 #from sim.evaluation.graph.packet.PacketGraph import *
 from sim.evaluation.graph.sn.SN import *
-#from sim.evaluation.graph.contour.ContourGraph import *
+from sim.evaluation.graph.contour.ContourGraph import *
 #from sim.evaluation.graph.contour.ContourGraphSentPackets import *
 #from sim.evaluation.graph.hist.HistGraph import *
 from sim.evaluation.graph.topology.TopologyGraph import *

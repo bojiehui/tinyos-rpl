@@ -19,7 +19,7 @@ class SN():
           mean_dict = []
           mean_dict = np.load(filenamebase+"_meanrtt.npy")     
          
-          for node in range(2,nodes+1):
+          for node in range(2,nodes+2):
                rtt_dict = []
                pl_dict = []          
                cx = []
