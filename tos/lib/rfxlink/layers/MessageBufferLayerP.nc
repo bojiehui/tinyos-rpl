@@ -189,21 +189,27 @@ implementation
 	task void sendTask()
 	{
 		bool done = FALSE;
-
+                dbg("MessageBuffer","MessageBuffer:SendTask @ %s.\n",sim_time_string());
 		call Tasklet.suspend();
 
 		RADIO_ASSERT( state == STATE_TX_PENDING || state == STATE_TX_DONE );
 
 		if( state == STATE_TX_PENDING && ++retries <= MAX_RETRIES )
 		{
+                  dbg("MessageBuffer","MessageBuffer:SendTask: call RadioSend.send @ %s.\n",sim_time_string());
 			txError = call RadioSend.send(txMsg);
-			if( txError == SUCCESS )
+			if( txError == SUCCESS ) {
+                          dbg("MessageBuffer","MessageBuffer:SendTask:->STATE_TX_SEND (txError == SUCCESS) @ %s.\n",sim_time_string());
 				state = STATE_TX_SEND;
-			else
+                        }
+			else {
+                          dbg("MessageBuffer","MessageBuffer:SendTask:->STATE_TX_RETRY  @ %s.\n",sim_time_string());
 				state = STATE_TX_RETRY;
+                        }
 		}
 		else
 		{
+                  dbg("MessageBuffer","MessageBuffer:SendTask:->STATE_READY  @ %s.\n",sim_time_string());
 			state = STATE_READY;
 			done = TRUE;
 		}
@@ -211,8 +217,10 @@ implementation
 		call Tasklet.resume();
 
 		if( done )
-		        dbg("Bo-MessageBuffer","MessageBuffer:Send Done @ %s.\n",sim_time_string());
-			signal Send.sendDone(txMsg, txError);
+                  {  
+                    dbg("MessageBuffer","MessageBuffer:signal Send.sendDone @ %s.\n",sim_time_string());
+                    signal Send.sendDone(txMsg, txError);
+                  }
 
 	}
 
@@ -221,11 +229,14 @@ implementation
 		RADIO_ASSERT( state == STATE_TX_SEND );
 
 		txError = error;
-		if( error == SUCCESS )
+		if( error == SUCCESS ) {
+                  dbg("MessageBuffer","MessageBuffer:RadioSend.sendDone->STATE_TX_DONE @ %s.\n",sim_time_string());
 			state = STATE_TX_DONE;
-		else
+                }
+		else {
+                  dbg("MessageBuffer","MessageBuffer:RadioSend.sendDone->STATE_TX_PENDING @ %s.\n",sim_time_string());
 			state = STATE_TX_PENDING;
-
+                }
 		post sendTask();
 	}
 
@@ -235,10 +246,13 @@ implementation
 
 		call Tasklet.suspend();
 
-		if( state != STATE_READY )
+		if( state != STATE_READY ) {
+                  dbg("MessageBuffer","MessageBuffer:Send.send: result: EBUSY @ %s.\n",sim_time_string());
 			result = EBUSY;
+                }
 		else
 		{
+                  dbg("MessageBuffer","MessageBuffer: Send.send->STATE_TX_PENDING @ %s.\n",sim_time_string());
 			txMsg = msg;
 			state = STATE_TX_PENDING;
 			retries = 0;
@@ -246,7 +260,6 @@ implementation
 			result = SUCCESS;
 		}
 
-		dbg("Bo-MessageBuffer","MessageBuffer:Send @ %s.\n",sim_time_string());
 		call Tasklet.resume();
 
 		return result;
@@ -257,6 +270,7 @@ implementation
 	{
 		if( state == STATE_TX_RETRY )
 		{
+                  dbg("MessageBuffer","MessageBuffer:RadioSend.ready->STATE_TX_PENDING @ %s.\n",sim_time_string());
 			state = STATE_TX_PENDING;
 			post sendTask();
 		}
@@ -276,6 +290,7 @@ implementation
 
 		if( state == STATE_TX_PENDING || state == STATE_TX_RETRY )
 		{
+                  dbg("MessageBuffer","MessageBuffer:Send.cancel->STATE_TX_DONE @ %s.\n",sim_time_string());
 			state = STATE_TX_DONE;
 			txError = ECANCEL;
 			result = SUCCESS;
@@ -337,7 +352,7 @@ implementation
 
 				msg = receiveQueue[receiveQueueHead];
 			}
-			dbg("Bo-MessageBuffer","MessageBuffer:Receive @ %s.\n",sim_time_string());
+			dbg("MessageBuffer","MessageBuffer:deliverTask: signal Receive.receive @ %s.\n",sim_time_string());
 			msg = signal Receive.receive(msg);
 		
 
