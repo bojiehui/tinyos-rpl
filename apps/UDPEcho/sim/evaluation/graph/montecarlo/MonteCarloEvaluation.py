@@ -2,7 +2,8 @@ import logging
 import logging.config
 
 from sim.evaluation.graph.contour.MonteCarloContourGraph import *
-from sim.evaluation.graph.contour.MonteCarloContourGraphSentPackets import *
+from sim.evaluation.graph.contour.MonteCarloContourGraphPacketLoss import *
+from sim.evaluation.graph.contour.MonteCarloContourGraphSentICMP import *
 from sim.evaluation.graph.hist.MonteCarloHistGraph import *
 
 from sim.utils.helper import *
@@ -16,7 +17,7 @@ class MonteCarloEvaluation:
         pass
 
     def execute(self,
-                executable_info,
+#                executable_info,
                 scenario_info,
                 iterations):
 
@@ -26,18 +27,25 @@ class MonteCarloEvaluation:
 
         if MONTECARLO_EVAL_LIST.count("MonteCarloContourGraph") > 0:
             mccg = MonteCarloContourGraph()
-            mccg.execute(executable_info, scenario_info, iterations)
+            mccg.execute(scenario_info, iterations)
         else:
             logger.warn("????MonteCarloContourGraph evaluation disabled")
 
-        if MONTECARLO_EVAL_LIST.count("MonteCarloContourGraphSentPackets") > 0:
-            mccgsp = MonteCarloContourGraphSentPackets()
-            mccgsp.execute(executable_info, scenario_info, iterations)
+        if MONTECARLO_EVAL_LIST.count("MonteCarloContourGraphPacketLoss") > 0:
+            mccgp = MonteCarloContourGraphPacketLoss()
+            mccgp.execute(scenario_info, iterations)
         else:
-            logger.warn("????MonteCarloContourGraphSentPackets evaluation disabled")
+            logger.warn("????MonteCarloContourGraphPacketloss evaluation disabled")
+
+
+        if MONTECARLO_EVAL_LIST.count("MonteCarloContourGraphSentICMP") > 0:
+            mccgsi = MonteCarloContourGraphSentICMP()
+            mccgsi.execute(scenario_info, iterations)
+        else:
+            logger.warn("????MonteCarloContourGraphSentICMP evaluation disabled")
 
         if MONTECARLO_EVAL_LIST.count("MonteCarloHistGraph") > 0:
             mchg = MonteCarloHistGraph()
-            mchg.execute(executable_info, scenario_info, iterations)
+            mchg.execute(scenario_info, iterations)
         else:
             logger.warn("????MonteCarloHistGraph evaluation disabled")

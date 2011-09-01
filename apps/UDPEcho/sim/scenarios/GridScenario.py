@@ -21,14 +21,14 @@ class GridScenario(Scenario):
 	self.scen_z = 0
 
     def connect_neighbors(self, id):
-        for id2 in range(1, self.nodes+2):
+        for id2 in range(1, self.nodes+1):
             if id == id2:
                 # do not connect with the same node
                 continue
             self.connect_neighbor(id, id2)
 
     def setup_radio(self):
-        for id in range(1, self.nodes+2):
+        for id in range(1, self.nodes+1):
             # regular creation of nodes
 
             if id == 1:
@@ -36,8 +36,8 @@ class GridScenario(Scenario):
                 y = 0
 		z = 0
             else:
-                x = (((id-2)//math.sqrt(self.nodes))+1)*self.distance
-                y = (((id-2)%math.sqrt(self.nodes))+1)*self.distance
+                x = ((id-1)//math.sqrt(self.nodes))*self.distance
+                y = ((id-1)%math.sqrt(self.nodes))*self.distance
                 z = 0
   
             print "Location of node", id, "is", (x, y, z)

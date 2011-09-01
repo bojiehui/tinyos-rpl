@@ -81,7 +81,9 @@ module IPForwardingEngineP {
   }
 
   task void defaultRouteAddedTask() {
+    dbg("IPForwardingEngine-DefaultRoute","AddEntry: Default Route Added @ %s.\n",sim_time_string());
     signal ForwardingTableEvents.defaultRouteAdded();
+   
   }
 
   command route_key_t ForwardingTable.addRoute(const uint8_t *prefix, 
@@ -101,11 +103,12 @@ module IPForwardingEngineP {
       /* got a default route and we didn't already have one */
       if (prefix_len_bits == 0) {
         post defaultRouteAddedTask();
+        // dbg("IPForwardingEngine-Entry","AddEntry: Default route added @ %s\n",sim_time_string());
       }
     }
     if (entry == NULL) 
       return ROUTE_INVAL_KEY;
-
+   
     entry->prefixlen = prefix_len_bits;
     entry->ifindex = ifindex;
     memcpy(&entry->prefix, prefix, prefix_len_bits / 8);

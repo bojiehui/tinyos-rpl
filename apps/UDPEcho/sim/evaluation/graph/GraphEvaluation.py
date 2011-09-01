@@ -4,8 +4,9 @@ import logging
 #from sim.evaluation.graph.packet.PacketGraph import *
 from sim.evaluation.graph.sn.SN import *
 from sim.evaluation.graph.contour.ContourGraph import *
-#from sim.evaluation.graph.contour.ContourGraphSentPackets import *
-#from sim.evaluation.graph.hist.HistGraph import *
+from sim.evaluation.graph.contour.ContourGraphSentICMP import *
+from sim.evaluation.graph.contour.ContourGraphPacketLoss import *
+from sim.evaluation.graph.hist.HistGraph import *
 from sim.evaluation.graph.topology.TopologyGraph import *
 from sim.evaluation.graph.topology.TopologyGraph_3D import *
 
@@ -49,12 +50,21 @@ class GraphEvaluation:
         else:
             logger.warn("????ContourGraph evaluation disabled")
 
-        if GRAPH_EVAL_LIST.count("ContourGraphSentPackets") > 0:
-            cgsp = ContourGraphSentPackets()
+        if GRAPH_EVAL_LIST.count("ContourGraphSentICMP") > 0:
+            cgsp = ContourGraphSentICMP()
             #cgsp.execute(executable_info, scenario_info)
             cgsp.execute(scenario_info)	
             del cgsp
             gc.collect()
+
+        if GRAPH_EVAL_LIST.count("ContourGraphPacketLoss") > 0:
+            cgpl = ContourGraphPacketLoss()
+            #cgsp.execute(executable_info, scenario_info)
+            cgpl.execute(scenario_info)	
+            del cgpl
+            gc.collect()
+        else:
+            logger.warn("????ContourGraph for Packet Loss evaluation disabled")
 
         if GRAPH_EVAL_LIST.count("HistGraph") > 0:
             hg = HistGraph()

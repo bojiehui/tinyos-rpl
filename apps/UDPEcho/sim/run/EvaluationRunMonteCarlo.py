@@ -24,10 +24,10 @@ class EvaluationRunMonteCarlo:
         logger.info(">"*10 + " New Monte Carlo evaluation run " + "<"*10)
 
     def execute(self,
-                ei_file,
+ #               ei_file,
                 si_file):
 
-        ei = pickle.load(open(ei_file, 'rb'))
+#        ei = pickle.load(open(ei_file, 'rb'))
         si = pickle.load(open(si_file, 'rb'))
 
         logger.info("="*40)
@@ -36,7 +36,7 @@ class EvaluationRunMonteCarlo:
         logger.info("="*40)
 
         mce = MonteCarloEvaluation()
-        mce.execute(ei, si, MONTE_CARLO_ITERATIONS)
+        mce.execute(si, MONTE_CARLO_ITERATIONS)
 
 
 if __name__ == "__main__":
@@ -58,8 +58,7 @@ if __name__ == "__main__":
              sys.exit(-1)
 
         ermc = EvaluationRunMonteCarlo()
-        ermc.execute(optionsp.executable_info,
-                     optionsp.scenario_info)
+        ermc.execute(optionsp.scenario_info)
 
     except:
         logger.exception("Exception in EvaluationRunMonteCarlo.py")

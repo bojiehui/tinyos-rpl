@@ -41,6 +41,7 @@
 #include "blip_printf.h"
 #include "RPL.h"
 
+#include <stdio.h>
 generic module RPLRoutingEngineP(){
   provides {
     interface RootControl;
@@ -60,11 +61,14 @@ generic module RPLRoutingEngineP(){
     interface Leds;
     interface StdControl as RankControl;
     interface RPLDAORoutingEngine;
+    interface ParameterInit<uint16_t> as Seed;
   }
 }
 
 implementation{
-
+  FILE *f;
+  uint16_t seed;
+ 
 #define RPL_GLOBALADDR
 
   /* Declare Global Variables */
@@ -89,8 +93,9 @@ implementation{
   uint8_t redunCounter = 0xFF;
   uint8_t doubleCounter = 0;
 
-  uint8_t DIOIntDouble = 11;
+  uint8_t DIOIntDouble = 10;
   uint8_t DIOIntMin = 8;
+
   uint8_t DIORedun = 0xFF;
   uint16_t MinHopRankInc = 1;
   uint16_t MaxRankInc = 3;
@@ -120,9 +125,17 @@ implementation{
   task void sendDISTask();
   task void init();
   task void initDIO();
-
+ 
   /* Start the routing with DIS message probing */
   task void init(){
+
+    f = fopen("/dev/urandom", "r");
+    fread(&seed, sizeof(seed), 1, f);
+    fclose(f);
+
+    call Seed.init(seed+TOS_NODE_ID+1);
+    // dbg("TrickleTimer", "TrickleTimer: randomized seed to %u\n", seed+TOS_NODE_ID+1);
+
 #ifdef RPL_STORING_MODE
     MOP = RPL_MOP_Storing_No_Multicast;
 #else
@@ -136,7 +149,7 @@ implementation{
 #endif
 
     ROOT_RANK = MinHopRankInc;
-
+  
     /* SDH : FF02::2 -- link-local all-routers group? */
     memset(MULTICAST_ADDR.s6_addr, 0, 16);
     MULTICAST_ADDR.s6_addr[0] = 0xFF;
@@ -159,6 +172,7 @@ implementation{
 
   /* When finding a DODAG post initDIO()*/
   task void initDIO(){
+    
     if(I_AM_ROOT){
       call RPLRouteInfo.resetTrickle();
     }
@@ -291,6 +305,7 @@ implementation{
                ntohs(DODAGID.s6_addr16[7]), msg.dagRank, tricklePeriod);
     */
     printf("TXDIO %d %lu \n", TOS_NODE_ID, ++countdio);
+    dbg("RPLRoutingEngine","TXDIO: %d %lu \n", TOS_NODE_ID, ++countdio);
     //printf("RANK %d %d %d\n", call RPLRankInfo.getRank(&ADDR_MY_IP), call RPLRankInfo.getEtx(), call RPLRankInfo.hasParent());
 
     if (UNICAST_DIO) {
@@ -299,7 +314,9 @@ implementation{
     } else {
       memcpy(&pkt.ip6_hdr.ip6_dst, &MULTICAST_ADDR, 16);
     }
+
     call IPAddress.getLLAddr(&pkt.ip6_hdr.ip6_src);
+
     //call IPAddress.getGlobalAddr(&pkt.ip6_hdr.ip6_src);
     // memcpy(&pkt.ip6_hdr.ip6_src, &ADDR_MY_IP, 16);
 
@@ -335,6 +352,7 @@ implementation{
 
     //printf("\n >>>>>> TxDIS\n");
     //printf(">> sendDIS %d %lu \n", TOS_NODE_ID, ++countdis);
+    dbg("RPLRoutingEngine","TXDIS: >>>sendDIS %d %lu @ %s\n", TOS_NODE_ID, ++countdis, sim_time_string());
 
     call IP_DIS.send(&pkt);
   }
@@ -365,10 +383,12 @@ implementation{
   }
 
   void resetTrickleTime(){
+
     call TrickleTimer.stop();
+    //dbg("TrickleTimer","TrickleTimer:DIOIntMin = %u\n",DIOIntMin);
     tricklePeriod = 2 << (DIOIntMin-1);
     redunCounter = 0;
-    doubleCounter = 0;
+    doubleCounter = 0;    
   }
 
   void chooseAdvertiseTime(){
@@ -379,15 +399,19 @@ implementation{
     randomTime = tricklePeriod;
     randomTime /= 2;
     randomTime += call Random.rand32() % randomTime;
+    dbg("TrickleTimer","TrickleTimer:tricklePeriod = %u,randomTime = %u @ %s\n",tricklePeriod, randomTime, sim_time_string());
+    
     call TrickleTimer.startOneShot(randomTime);
   }
 
   void computeTrickleRemaining(){
     // start timer for the remainder time (TricklePeriod - randomTime)
     uint32_t remain;
+
     remain = tricklePeriod - randomTime;
     sentDIOFlag = TRUE;
     call TrickleTimer.startOneShot(remain);
+ 
   }
 
   void nextTrickleTime(){
@@ -414,7 +438,9 @@ implementation{
   }
 
   command error_t RPLRouteInfo.getDefaultRoute(struct in6_addr *next) {
+    //    dbg("TrickleTimer","getDefaultRoute @ %s\n",sim_time_string());
     return call RPLRankInfo.getDefaultRoute(next);
+   
   }
 
   command void RPLRouteInfo.setDODAGConfig(uint8_t IntDouble, 
@@ -509,10 +535,12 @@ implementation{
 
   event void TrickleTimer.fired() {
     if (sentDIOFlag) {
+      dbg("TrickleTimer","TrickleTimer: DIO already sent @ %s. \n",sim_time_string());
       // DIO is already sent and trickle period has passed 
       // increase tricklePeriod
       nextTrickleTime();
     } else {
+      dbg("TrickleTimer","TrickleTimer: sendDIOTask @ %s.\n",sim_time_string());
       // send DIO, randomly selected time has passed
       // compute the remaining time
       // Change back to DIO

@@ -12,6 +12,7 @@ from matplotlib.text import Text
 from matplotlib.lines import Line2D
 from matplotlib.figure import SubplotParams
 
+from sim.config import *
 from sim.utils.helper import *
 from sim.scenarios.ScenarioInformation import *
 #from sim.scenarios.ExecutableInformation import *
@@ -34,8 +35,8 @@ class TopologyGraph:
         print "="*40
 
         # consist = np.zeros(si.nodes+1)
-        xarr = np.zeros(si.nodes+2)
-        yarr = np.zeros(si.nodes+2)
+        xarr = np.zeros(si.nodes+1)
+        yarr = np.zeros(si.nodes+1)
 
         packs = []
 
@@ -43,13 +44,13 @@ class TopologyGraph:
         id2xyz_dict = pickle.load(ifile)
         ifile.close()
 
-        for id1 in range(1, si.nodes+2):
+        for id1 in range(1, si.nodes+1):
             (x, y, z) = id2xyz_dict[id1]
             xarr[id1] = x
             yarr[id1] = y
 
-        for id1 in range(1, si.nodes+2):
-            for id2 in range(1, si.nodes+2):
+        for id1 in range(1, si.nodes+1):
+            for id2 in range(1, si.nodes+1):
 
 	            if prr[id1][id2] != np.nan:
                         if prr[id1][id2] > 0:
@@ -74,7 +75,7 @@ class TopologyGraph:
                                        linewidth=1)
                                  )
 
-        for i in range(1, si.nodes+2):
+        for i in range(1, si.nodes+1):
             (x, y, z) = id2xyz_dict[i]
 
             if math.sqrt(si.nodes) >= 10:
@@ -116,24 +117,29 @@ class TopologyGraph:
 
         #plt.yticks(range(0, si.sqr_nodes+1))
         #plt.xticks(range(0, si.si.sqr_nodes+1))
-        if math.sqrt(si.nodes) >= 10:
-            lim_delta = 1
-        else:
-            lim_delta = .2
-
-        #plt.xlim(-lim_delta, si.sqr_nodes+lim_delta)
-        #plt.ylim(-lim_delta, si.sqr_nodes+lim_delta)
 
         if max(xarr) > max(yarr):
             max_xy = max(xarr)
         else:
             max_xy = max(yarr)
+        print max_xy
 
-        plt.xlim(-lim_delta, max_xy+lim_delta)
-        plt.ylim(-lim_delta, max_xy+lim_delta)
+        if DISTANCE_LIST >= 50:
+                lim_delta = 10
+        else:
+                lim_delta = 5
 
-        #plt.xlabel("x index")
-        #plt.ylabel("y index")
+        if SCENARIO == 'GridScenario':
+           
+            plt.xlim(-lim_delta, max_xy+lim_delta)
+            plt.ylim(-lim_delta, max_xy+lim_delta)
+
+        if SCENARIO == 'LineScenario':
+            
+
+            plt.xlim(-lim_delta, max_xy+lim_delta)
+            plt.ylim(-lim_delta, max(yarr)+lim_delta)
+            
         plt.xlabel("x [m]")
         plt.ylabel("y [m]")
           

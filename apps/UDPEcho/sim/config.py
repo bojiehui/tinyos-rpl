@@ -17,23 +17,23 @@ NODES_LIST = [4]	#Number of nodes
 
 #SQR_NODES_LIST    = [2, 3, 4, 5, 6, 7, 8, 9, 10, 15, 20]
 
-#DISTANCE_LIST      [70, 80]
+DISTANCE_LIST      = [100]
 #DISTANCE_LIST     = [40]
-#DISTANCE_LIST     = [20, 40]
-#DISTANCE_LIST     = [20, 40, 60, 80, 100]
+#DISTANCE_LIST     = [20, 100]
+#DISTANCE_LIST     = [20, 60, 100]
 #DISTANCE_LIST     = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
 #DISTANCE_LIST     = [ 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100]
 #DISTANCE_LIST     = [30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]
-#DISTANCE_LIST     = [30, 50, 70, 90, 110, 130]
+#DISTANCE_LIST     = [30, 50, 110, 130]
 #DISTANCE_LIST     = [10, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]
 
 #DISTANCE_LIST     = [10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120, 130, 140]
 
-DISTANCE_LIST     = [80] # FOR MOTELAB
+#DISTANCE_LIST     = [100] # FOR MOTELAB
 
-#MONTE_CARLO_ITERATIONS = 2
-#MONTE_CARLO_ITERATIONS = 300
 MONTE_CARLO_ITERATIONS = 1
+#MONTE_CARLO_ITERATIONS = 300
+#MONTE_CARLO_ITERATIONS = 100
 
 #RANDOMIZE_BOOT      = True
 RANDOMIZE_BOOT      = False
@@ -46,9 +46,9 @@ RANDOMIZE_SEED      = True
 RANDOMIZE_TOPOLOGY  = False
 
 #SCENARIO = "GridScenario"
+#SCENARIO = "DirectNeighborGridScenario"
 #SCENARIO = "RandomScenario"
 SCENARIO = "LineScenario"
-#SCENARIO = "TestingContainerScenario"
 #SCENARIO = "ContainerScenario"
 #SCENARIO = "DirectNeighborLineScenario"
 #SCENARIO = "MoteLabConnectivityScenario"
@@ -59,54 +59,75 @@ MIN_DISTANCE = 130
 MEAN_DISTANCE = 143
 MAX_DISTANCE = 153
 
+#SIM_REALTIME = True
 SIM_REALTIME = False
-SIM_TIME = 50
+SIM_TIME = 1000000
 
 # debug channels:
 stdout_channels = [
     #"TrickleSimC"
     #"Trickle", sys
     #"TrickleTimes"
-    #"Boot"
-    "MsgSuccessRecv"
-    ,"MsgRequests"
-    ,"UDPEchoP"
-    ,"IPForwardingEngine-PTr"
-    # ,"IPForwardingEngine-Routes"
+    "Boot",
+    #"CpmModelC",
+    #"Csma",
+    #"MessageBuffer",
+    #"driver.debug",
+    #"Collision",
+    #"PacketLink",
+    "MsgExchange",
+    "MsgSuccessRecv",
+    #"MsgRequests",
+    "UDPEchoP",
+    #"IPForwardingEngine-PTr",
+    "IPForwardingEngine-DefaultRoute",
+    #"ICMPCore"
+   # "IPForwardingEngine-Routes",
     ]
 
 file_channels = [
     "Boot",
-    #"CpmModelC,SNRLoss",
-    #"CpmModelC,SNR",
+    "TrickleTimer",
+   # "CpmModelC,SNRLoss",
+   # "CpmModelC,SNR",
     #"ICMPResponder", "mab",
-    #"CpmModelC","ICMPPing", "base",
+   # "CpmModelC",
+    #"ICMPPing", "base",
+   # "154Message",
+   # "Bo-Network",
+   # "Bo-Unique",
+   # "Bo-LPL",
+   # "PacketLink",
+   # "MessageBuffer",
+   # "Collision",
+   # "SoftwareAck",
+   # "Csma",
+   # "Driver.debug",
+   # "Driver.error",
     "MsgExchange",
     "MsgRequests",
     "MsgSuccessRecv",
-    #"TossimPacketModelC",
-
-    # "Packet",
-    # "Drops",
-    # "IPDispatchP",
-    # "IPDispatch",
-    # "IP",
-    # "IPRouting",
-    # "Install",
-    # "Table",
-    # "ICMPResponder",
-    # "6LoWPAN"
+    "UDPEchoP",
+    "IPForwardingEngine-DefaultRoute",
+    "IPForwardingEngine-PTr",
+    "ICMPCore",
+    "RPLRoutingEngine",
+    "RPLDAORoutingEngine"
+   # "IPForwardingEngine-Routes",
+    #"TossimPacketModelC"
     ]
 
-#METRIC_EVAL = True
-METRIC_EVAL = False
+METRIC_EVAL = True
+#METRIC_EVAL = False
 
 GRAPH_EVAL = True
 #GRAPH_EVAL = False
 GRAPH_EVAL_LIST = [
     "SN",
 #    "ContourGraph",
-#    "HistGraph",
+#    "ContourGraphPacketLoss",
+#    "ContourGraphSentICMP",
+    #"HistGraph",
 #    "TopologyGraph",
     ]
 
@@ -114,7 +135,9 @@ GRAPH_EVAL_LIST = [
 MONTECARLO_EVAL = False
 MONTECARLO_EVAL_LIST = [
 #    "MonteCarloContourGraph",
-    "MonteCarloHistGraph",
+#    "MonteCarloContourGraphPacketLoss",
+#    "MonteCarloContourGraphSentICMP",
+#    "MonteCarloHistGraph",
     ]
 
 #SUITE_EVAL = True
@@ -124,33 +147,16 @@ SUITE_EVAL_LIST = [
     "SuiteEvaluationHist",
     ]
 
-EVAL_LOW_TIME  = -.2
+EVAL_LOW_TIME  = 0
 #EVAL_HIGH_TIME = 120
-EVAL_HIGH_TIME = 10
+EVAL_HIGH_TIME = 30000
 #EVAL_BINS      = (EVAL_HIGH_TIME - EVAL_LOW_TIME) * 10000
-EVAL_BINS      = (EVAL_HIGH_TIME - EVAL_LOW_TIME) * 60000
+EVAL_BINS      = (EVAL_HIGH_TIME - EVAL_LOW_TIME) * 60
 
 if RANDOMIZE_TOPOLOGY == True and SCENARIO != "RandomScenario":
     raise Exception("Cannot randomize non random scenario topology. Check config.py")
 
 if RANDOMIZE_TOPOLOGY == True and MONTECARLO_EVAL_LIST.count("MonteCarloContourGraph") > 0:
     raise Exception("Cannot create contour graph for randomized topology. Check config.py")
-
-#########
-
-#SMTP_SERVER = 'localhost'
-#SMTP_SERVER = 'bugs.comnets.uni-bremen.de'
-
-#MAIL_SENDER = 'mab@comnets.uni-bremen.de'
-#MAIL_RECEIVERS = ['mab@comnets.uni-bremen.de']
-
-#MAIL_TEMPLATE = """From: Markus Becker <mab@comnets.uni-bremen.de>
-#To: Markus Becker <mab@comnets.uni-bremen.de>
-#Subject: Simulation/Evaluation finished
-
-#The simulation/evaluation has finished:
-#"""
-
-#########
 
 LOGFILENAME = "sim/logging.conf"

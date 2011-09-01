@@ -51,7 +51,7 @@ class ContainerScenario(Scenario):
 	self.nodetype_dict = {}	
 
     def connect_neighbors(self, id, id2):
-        for id2 in range(1, self.nodes+1):
+        for id2 in range(1, self.nodes+2):
             if id == id2:
                 # do not connect with the same node
                 continue
@@ -110,25 +110,25 @@ class ContainerScenario(Scenario):
         pickle.dump(self.nodetype_dict, tf)
         tf.close()
 
-        for id in range(1, self.nodes+1):
-            for id2 in range(1, self.nodes+1):
+        for id in range(1, self.nodes+2):
+            for id2 in range(1, self.nodes+2):
                 if id == id2:
                     continue
                 self.connect_neighbors(id, id2)
 
-        for id in range(1, self.nodes+1):
+        for id in range(1, self.nodes+2):
             for i in range(0, 10000):
                 self.t.getNode(id).addNoiseTraceReading(-98)
 
-        for id in range(1, self.nodes+1):
+        for id in range(1, self.nodes+2):
             self.t.getNode(id).createNoiseModel()
 
-        neighbors_min  = np.zeros(self.nodes+1)
-        neighbors_mean = np.zeros(self.nodes+1)
-        neighbors_max  = np.zeros(self.nodes+1)
+        neighbors_min  = np.zeros(self.nodes+2)
+        neighbors_mean = np.zeros(self.nodes+2)
+        neighbors_max  = np.zeros(self.nodes+2)
 
 
-        for id in range(1, self.nodes+1):
+        for id in range(1, self.nodes+2):
             neighbors_min [id] = self.calc_neighbors(id, MIN_DISTANCE)
             neighbors_mean[id] = self.calc_neighbors(id, MEAN_DISTANCE)
             neighbors_max [id] = self.calc_neighbors(id, MAX_DISTANCE)
@@ -180,7 +180,7 @@ class ContainerScenario(Scenario):
 	]
         
 
-        for id in range(1, self.nodes+1):
+        for id in range(1, self.nodes+2):
             x = n[id-1][0][0]
 	    y = n[id-1][0][1]
 	    z = n[id-1][0][2]

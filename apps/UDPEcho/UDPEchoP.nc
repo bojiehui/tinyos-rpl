@@ -38,6 +38,7 @@
 #include "TestMessage.h"
 #include "UDPReport.h"
 #include "blip_printf.h"
+#include <stdlib.h>
 #define REPORT_PERIOD 10L
 
 module UDPEchoP {
@@ -77,6 +78,7 @@ module UDPEchoP {
 
   event void Boot.booted() {
     memclr((uint8_t *)&payload, sizeof(payload));
+    dbg("Boot","Application Booted @ %s.\n",sim_time_string());
     call RadioControl.start();
     timerStarted = FALSE;
     call IPStats.clear();
@@ -118,18 +120,22 @@ module UDPEchoP {
     }
 
   if (TOS_NODE_ID == SOURCE_NODE_ID) {
+              
+              if (ntohs(route_dest.sin6_addr.s6_addr16[7]) > NETWORK_SIZE){
+                dbg("UDPEchoP","####################Finishing Ping################\n"); 
+                call RadioControl.stop();
+                exit(-1);
+             }
+          #ifdef PING_COUNT
+          else if(stats.seqno == PING_COUNT){  
+             route_dest.sin6_addr.s6_addr16[7] = htons((ntohs(route_dest.sin6_addr.s6_addr16[7]))+1); 
+             dbg("UDPEchoP","Updated Dest Node ID = %i on Port = %i @ %s  \n",ntohs(route_dest.sin6_addr.s6_addr16[7]), ntohs(route_dest.sin6_port), sim_time_string()); 
       
-        if (ntohs(route_dest.sin6_addr.s6_addr16[7]) > NETWORK_SIZE){
-             dbg("UDPEchoP","####################Finishing Ping################\n");
-           }
-        else if(stats.seqno == PING_COUNT){ 
-           route_dest.sin6_addr.s6_addr16[7] = htons((ntohs(route_dest.sin6_addr.s6_addr16[7]))+1);
-           dbg("UDPEchoP","Updated Dest Node ID = %X on Port = %i   \n",ntohs(route_dest.sin6_addr.s6_addr16[7]), ntohs(route_dest.sin6_port));
-      
-           stats.seqno = 0; 
-           sequence_nr = 0;
-        }
-        else {
+            stats.seqno = 0;  
+            sequence_nr = 0; 
+         }
+         #endif
+        else { 
         stats.seqno++;  
         stats.sender = TOS_NODE_ID;
         payload.counter = sequence_nr++;
@@ -140,30 +146,30 @@ module UDPEchoP {
         payload.data[DATA_SIZE-1]= 0xFF;
 
         call Leds.led1Toggle();
-        dbg ("MsgExchange", "MsgExchang: Send: Node %i is sending UDP Message to Node = %X:%X:%X on Port = %i   \n",TOS_NODE_ID, ntohs(route_dest.sin6_addr.s6_addr16[0]), ntohs(route_dest.sin6_addr.s6_addr16[3]), ntohs(route_dest.sin6_addr.s6_addr16[7]), ntohs(route_dest.sin6_port) );
+        dbg ("MsgExchange", "MsgExchange: Send: Node %i is sending UDP Message to Node = %X on Port = %i SequenceNr: %i \n",TOS_NODE_ID, ntohs(route_dest.sin6_addr.s6_addr16[7]), ntohs(route_dest.sin6_port), payload.counter);
         dbg ("MsgExchange", "Send at %s \n", sim_time_string());
         dbg ("MsgRequests", "Request: Node: %i calls Node: %X SequenceNr: %i Time: %s \n",TOS_NODE_ID, ntohs(route_dest.sin6_addr.s6_addr16[7]), payload.counter, sim_time_string());
 
         call UDPSend.sendto(&route_dest, &payload, sizeof(payload));}
     }
-  }
+   }
 
   event void UDPReceive.recvfrom(struct sockaddr_in6 *from, void *data,
                                  uint16_t len, struct ip6_metadata *meta) {
     //Binded to the listen port
     static char print_buf3[128];
     radio_count_msg_t * message_rec = (radio_count_msg_t *) data;
-	memcpy(&resp_dest,from,sizeof(struct sockaddr_in6));
+    memcpy(&resp_dest,from,sizeof(struct sockaddr_in6));
 
     resp_data = data;
     resp_len = len;
 
     inet_ntop6(&from->sin6_addr, print_buf3, 128);
-    dbg ("MsgSuccessRecv", "Received Data from address = %s Port = %i SequenceNr: %i Time: %s\n", print_buf3, ntohs(from->sin6_port), message_rec->counter, sim_time_string());
-    dbg ("MsgExchange", "MsgExchange: Send: Sending response to address = %s Port = %i @ %s\n", print_buf3, ntohs(from->sin6_port),sim_time_string());
+    dbg ("MsgSuccessRecv", "Received Data from address = %s Port = %i SequenceNr: %i @ %s\n", print_buf3, ntohs(from->sin6_port), message_rec->counter, sim_time_string());
+    dbg ("MsgExchange", "MsgExchange: Send: Sending response to address = %s Port = %i SequenceNr: %i @ %s\n", print_buf3, ntohs(from->sin6_port), message_rec->counter, sim_time_string());
 
-    call DelayTimer.startOneShot(1);
-    //call UDPReceive.sendto(from, data, len);
+    call DelayTimer.startOneShot(START_DELAY_TIMER);
+    //call UDPReceive.sendto(&resp_dest, resp_data, resp_len);
 
   }
 
@@ -173,16 +179,16 @@ module UDPEchoP {
     static char print_buf3[128];
 
     inet_ntop6(&from->sin6_addr, print_buf3, 128);
-    dbg ("MsgExchange", "MsgExchange: Receive: Got response from address = %s Port = %i\n", print_buf3, ntohs(from->sin6_port));
+    dbg ("MsgExchange", "Receive: Got response from address = %s Port = %i SequenceNr: %i\n", print_buf3, ntohs(from->sin6_port), payload.counter);
     dbg ("MsgExchange", "Receive at %s \n", sim_time_string());
     dbg ("MsgRequests", "Response: Node: %s answered Node: %i SequenceNr: %i Time: %s\n",print_buf3, TOS_NODE_ID, message_rec->counter , sim_time_string());
-  
 }
+  
 
-event void DelayTimer.fired() {
+ event void DelayTimer.fired() {
     
-    dbg ("MsgExchange", "MsgExchang: Timer fired. Send to Node = %X:%X:%X on Port = %i   \n", ntohs(resp_dest.sin6_addr.s6_addr16[0]), ntohs(resp_dest.sin6_addr.s6_addr16[3]), ntohs(resp_dest.sin6_addr.s6_addr16[7]), ntohs(resp_dest.sin6_port) );
+     dbg ("MsgExchange", "MsgExchange: Timer fired. Send to Node = %X:%X:%X on Port = %i   \n", ntohs(resp_dest.sin6_addr.s6_addr16[0]), ntohs(resp_dest.sin6_addr.s6_addr16[3]), ntohs(resp_dest.sin6_addr.s6_addr16[7]), ntohs(resp_dest.sin6_port) ); 
 
-    call UDPReceive.sendto(&resp_dest, resp_data, resp_len);
-  }
-  }
+     call UDPReceive.sendto(&resp_dest, resp_data, resp_len); 
+   } 
+   } 

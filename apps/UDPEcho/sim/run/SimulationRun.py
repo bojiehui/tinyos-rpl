@@ -22,6 +22,7 @@ from sim.config import *
 
 from sim.scenarios.Scenario import Scenario
 from sim.scenarios.GridScenario import *
+from sim.scenarios.DirectNeighborGridScenario import *
 from sim.scenarios.RandomScenario import *
 from sim.scenarios.LineScenario import *
 from sim.scenarios.DirectNeighborLineScenario import *
@@ -67,19 +68,21 @@ class SimulationRun:
             self.t.addChannel(ch, f)
 
         #scenario setup
-	logger.info("Scenario =" + SCENARIO)
+	logger.info("Scenario = " + SCENARIO)
         if SCENARIO == "GridScenario":
             s = GridScenario(self.t, si)
+        elif SCENARIO == "DirectNeighborGridScenario":
+            s = DirectNeighborGridScenario(self.t, si)
         elif SCENARIO == "RandomScenario":
             s = RandomScenario(self.t, si)
         elif SCENARIO == "LineScenario":
             s = LineScenario(self.t, si)
         elif SCENARIO == "ContainerScenario":
             s = ContainerScenario(self.t, si)
-#        elif SCENARIO == "DirectNeighborLineScenario":
-#            s = DirectNeighborLineScenario(self.t, ei, si)
-#        elif SCENARIO == "MoteLabConnectivityScenario":
-#            s = MoteLabConnectivityScenario(self.t, ei, si)
+        elif SCENARIO == "DirectNeighborLineScenario":
+            s = DirectNeighborLineScenario(self.t, si)
+        elif SCENARIO == "MoteLabConnectivityScenario":
+            s = MoteLabConnectivityScenario(self.t, si)
         else:
             raise Exception("No supported scenario configured. Check run/SimulationRun.py")
  
@@ -115,13 +118,14 @@ class SimulationRun:
                     clockTimeDifferenceSec = (clockTimeDifference.seconds + clockTimeDifference.microseconds / float(1000000))
                     simCurrentTimeSec   = self.t.time() / float(self.t.ticksPerSecond())
                     sleepTime = simCurrentTimeSec - clockTimeDifferenceSec
-            
+                    
                     while sleepTime > 0:
                         time.sleep(sleepDelta)
-                        sleepTime -= sleepDelta	
+                        sleepTime -= sleepDelta
+                            
                     eventPresent = self.t.runNextEvent()
                     eventCtr = eventCtr + 1
-
+            
             except KeyboardInterrupt:
                 print ">>> Ctrl-C"
 
@@ -132,8 +136,6 @@ class SimulationRun:
             print ">>> No realtime simulation."
             sim_time = SIM_TIME * self.t.ticksPerSecond() + self.t.time()
             simStartTime   = self.t.time()
-            # time = t.time()+sim_time
-            # print "Time",sim_time
             self.t.runNextEvent();
 
             while (sim_time > self.t.time()):
@@ -162,9 +164,7 @@ if __name__ == "__main__":
 
         (optionsp, argsp) = optparser.parse_args()
 
-#        if not (optionsp.executable_info or
-
-        if not optionsp.scenario_info:
+        if not (optionsp.scenario_info):
             optparser.print_help()
             logger.error(">"*10 + " Option parsing failed " + "<"*10)
             sys.exit(-1)

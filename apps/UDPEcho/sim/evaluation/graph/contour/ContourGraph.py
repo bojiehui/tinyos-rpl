@@ -19,7 +19,7 @@ class ContourGraph:
         pass
 
     def execute(self,
-                ei,
+#                ei,
                 si):
 
         filenamebase = si.createfilenamebase()
@@ -28,53 +28,54 @@ class ContourGraph:
         print "filenamebase\t\t", filenamebase
         print "="*40
 
-        node_re = 'DEBUG \((\d+)\):'
-        node_re_c = re.compile(node_re)
-        time_re = '(\d+):(\d+):(\d+.\d+)'
-        time_re_c = re.compile(time_re)
-
-        consist = np.empty(si.nodes+2)
-        consist.fill(np.nan)
-        xarr = np.zeros(si.nodes+2)
-        yarr = np.zeros(si.nodes+2)
+        if SCENARIO == 'LineScenario':
+             point_no = 2*si.nodes+1
+             xarr = np.zeros(point_no)
+             yarr = np.zeros(point_no)
+             mean = np.zeros(point_no)
+             new  = np.zeros(point_no)
+        else:
+            xarr = np.zeros(si.nodes+1)
+            yarr = np.zeros(si.nodes+1)
+            mean = np.zeros(si.nodes+1)
+            new  = np.zeros(si.nodes+1)
 
         packs = []
 
-        #print "Reading id2xy mapping from "+(filenamebase+"_id2xy.pickle")
-        ifile = open(filenamebase+"_id2xy.pickle", "r")
-        id2xy_dict = pickle.load(ifile)
+        print "Reading id2xyz mapping from "+(filenamebase+"_id2xyz.pickle")
+        ifile = open(filenamebase+"_id2xyz.pickle", "r")
+        id2xyz_dict = pickle.load(ifile)
         ifile.close()
+        mean_dict = np.load(filenamebase+"_meanrtt.npy")
 
-        for i in range(1, si.nodes+2):
-            (x, y) = id2xy_dict[i]
+        for i in range(0,si.nodes+1):
+            mean[i] = mean_dict[i] 
+
+        for i in range(1, si.nodes+1):
+            (x, y, z) = id2xyz_dict[i]
             xarr[i] = x
-            yarr[i] = y
+            yarr[i] = y 
+       
+        if SCENARIO == 'LineScenario':
+            for j in range(si.nodes+1, point_no):
+                index = j-si.nodes
+                xarr[j] = xarr[index]
+                yarr[j] = 1
+                mean[j] = mean[index]
+            for i in range (0,2*(si.nodes)+1):  
+                if math.isnan(mean[i]):
+                    mean[i] = 2048
+                else:
+                    new[i] = mean[i]
+        else:
+            for i in range (0,si.nodes+1):
+                if math.isnan(mean[i]):
+                    mean[i] = 2048
+                else:
+                    new[i] = mean[i]
 
-        f = open(filenamebase+".log", "r")
-        for line in f:
-            #print line,
-            if line.find("inconsistent newer") >= 0:
-                #print line,
-
-                node_obj = node_re_c.search(line)
-                node = int(node_obj.group(1))
-
-                time_obj = time_re_c.search(line)
-                #print "\t", time_obj.group(0),
-                t = Time(time_obj.group(1),
-                         time_obj.group(2),
-                         time_obj.group(3))
-                #print t.in_second()
-
-                if np.isnan(consist[node]):
-                    consist[node] = t.in_second() - ei.defines["INJECT_TIME"]/1024
-
-        f.close()
-
-        np.save(filenamebase+"_consist_contour.npy", consist)
-
-        for i in range(1, si.nodes+2):
-            (x, y) = id2xy_dict[i]
+        for i in range(1, si.nodes+1):
+            (x, y, z) = id2xyz_dict[i]
             if si.nodes >= 100:
                 fs = 7
             else:
@@ -99,16 +100,13 @@ class ContourGraph:
             ax.add_artist(p)
             p.set_clip_box(ax.bbox)
 
-        #print "! Max. Time to Consistency:", np.max(consist)
-        #print "! Min. Time to Consistency:", np.min(consist)
-
         LOW_LEVEL = 0
-        HIGH_LEVEL = 3*math.sqrt(si.nodes)
-
+        HIGH_LEVEL = max(new)+100
+    
         levels = floatRange(LOW_LEVEL,
                             HIGH_LEVEL,
-                            .5)
-        #print levels
+                            5)
+        #print "HIGH_LEVEL",HIGH_LEVEL
 
         my_cm = cm.jet
         my_cm.set_over('k')
@@ -119,15 +117,17 @@ class ContourGraph:
 
         #print ">>>>x", xarr
         #print ">>>>y", yarr
-        #print ">>>>consist", consist
+        if SCENARIO == 'LineScenario':
+            xi = np.linspace(0, max(xarr),10)
+            yi = np.linspace(0, max(yarr),10)
+        else:
+            xi = np.linspace(0, max(xarr),100)
+            yi = np.linspace(0, max(yarr),100)
 
-        xi = np.linspace(0, max(xarr), 100)
-        yi = np.linspace(0, max(yarr), 100)
-        zi = griddata(xarr[2:], yarr[2:], consist[2:], xi, yi)
+        zi = griddata(xarr[1:], yarr[1:], mean[1:], xi, yi)
 
-        #CS = plt.contourf(xarr, yarr, consist, levels,
         CS = plt.contourf(xi, yi, zi, levels,
-                          cmap = my_cm, norm = my_norm,
+                    cmap = my_cm, norm = my_norm,
                           extend='max')
         CS.set_clim(CS.cvalues[0], CS.cvalues[-2])
 
@@ -139,35 +139,31 @@ class ContourGraph:
             plt.grid()
 
         text = "#Nodes: " +str(si.nodes) + ", " + \
-            "Size: " + str(si.distance) + ", " + \
-            "K: " + str(ei.defines["DISTRIBUTION_TRICKLE_K"])
-        title = 'Model Time to Consistency [s]\n(' + text + ')'
+            "Inter node distance: " + str(si.distance) + "m"
+
+        title = 'Mean RTT [ms] \n(' + text + ')'
 
         plt.title(title)
-
-        #if si.sqr_nodes <= 10:
-        #plt.yticks(range(si.sqr_nodes+1))
-        #plt.xticks(range(si.sqr_nodes+1))
-        #else:
-        #    plt.yticks(range(0, si.sqr_nodes, 2))
-        #    plt.xticks(range(0, si.sqr_nodes, 2))
-
-        if math.sqrt(si.nodes) >= 10:
-            lim_delta = 1
-        else:
-            lim_delta = .2
-
-        #plt.xlim(-lim_delta, si.sqr_nodes+lim_delta)
-        #plt.ylim(-lim_delta, si.sqr_nodes+lim_delta)
 
         if max(xarr) > max(yarr):
             max_xy = max(xarr)
         else:
             max_xy = max(yarr)
+        
+        if si.distance >= 50:
+                lim_delta = 10
+        else:
+                lim_delta = 5
 
-        plt.xlim(-lim_delta, max_xy+lim_delta)
-        plt.ylim(-lim_delta, max_xy+lim_delta)
+        if SCENARIO == 'GridScenario':
+           
+            plt.xlim(-lim_delta, max_xy+lim_delta)
+            plt.ylim(-lim_delta, max_xy+lim_delta)
 
+        if SCENARIO == 'LineScenario':    
+
+            plt.xlim(-lim_delta, max_xy+lim_delta)
+            plt.ylim(-lim_delta, lim_delta)
 
         plt.xlabel("x [m]")
         plt.ylabel("y [m]")

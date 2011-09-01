@@ -23,7 +23,7 @@ class HistGraph:
         pass
 
     def execute(self,
-                ei,
+              #  ei,
                 si):
 
         filenamebase = si.createfilenamebase()
@@ -37,59 +37,49 @@ class HistGraph:
         time_re = '(\d+):(\d+):(\d+.\d+)'
         time_re_c = re.compile(time_re)
 
-        consist_avail = np.empty(si.nodes+2)
-        consist_purge = np.empty(si.nodes+2)
-
-        consist_avail.fill(np.nan)
-        consist_purge.fill(np.nan)
+        route = np.empty(si.nodes+1)
+        route_time = np.empty(si.nodes+1)
+        boot_time = np.empty(si.nodes+1)
+        
+        route.fill(np.nan)
+        route_time.fill(np.nan)
+        boot_time.fill(np.nan)
 
         f = open(filenamebase+".log", "r")
         for line in f:
-            #print line,
-            if line.find("inconsistent") >= 0:
-                #print line,
-
+            if line.find("Application Booted") >= 0:
                 node_obj = node_re_c.search(line)
                 node = int(node_obj.group(1))
 
                 time_obj = time_re_c.search(line)
-                #print "\t", time_obj.group(0),
                 t = Time(time_obj.group(1),
                          time_obj.group(2),
                          time_obj.group(3))
-                #print t.in_second()
+                boot_time[node] = t.in_milisecond()
 
-                if np.isnan(consist_avail[node]):
-                    consist_avail[node] = t.in_second() - ei.defines["INJECT_TIME"]/1024
-
-            if line.find("really purge now") >= 0:
-                #print line,
-
+            if line.find("AddEntry") >= 0:
                 node_obj = node_re_c.search(line)
                 node = int(node_obj.group(1))
 
                 time_obj = time_re_c.search(line)
-                #print "\t", time_obj.group(0),
+
                 t = Time(time_obj.group(1),
                          time_obj.group(2),
                          time_obj.group(3))
-                #print t.in_second()
 
-                if (t.in_second() - si.turnoff_node_time < 0):
-                    print "PURGED TOO EARLY:", node, t.in_second()
-
-                consist_purge[node] = t.in_second() - ei.defines["INJECT_TIME"]/1024
+                if np.isnan(route_time[node]):
+                    route[node] = t.in_milisecond()
         f.close()
+        
+        for node in range (0,si.nodes+1):
+            route_time[node] = route[node] - boot_time[node]
+       
+        print "route_time = ", route_time
+        cdf_route = stats.cumfreq(route_time[2:], 10, (EVAL_LOW_TIME, EVAL_HIGH_TIME))
+       # cdf_route = stats.cumfreq(route_time[2:], 3, (EVAL_LOW_TIME, EVAL_HIGH_TIME))
+        print cdf_route[0]#, max(cdf_route[0])#, cdf_avail[0]/max(cdf_avail[0])
 
-        cdf_avail = stats.cumfreq(consist_avail[2:], EVAL_BINS, (EVAL_LOW_TIME, EVAL_HIGH_TIME))
-        cdf_purge = stats.cumfreq(consist_purge[2:], EVAL_BINS, (EVAL_LOW_TIME, EVAL_HIGH_TIME))
-        #print cdf_avail, max(cdf_avail[0])#, cdf_avail[0]/max(cdf_avail[0])
-
-        pdf_avail = stats.relfreq(consist_avail[2:], EVAL_BINS, (EVAL_LOW_TIME, EVAL_HIGH_TIME))
-        pdf_purge = stats.relfreq(consist_purge[2:], EVAL_BINS, (EVAL_LOW_TIME, EVAL_HIGH_TIME))
-
-        np.save(filenamebase+"_hist_consist_avail.npy", consist_avail)
-        np.save(filenamebase+"_hist_consist_purge.npy", consist_purge)
+        np.save(filenamebase+"_hist_route_appear_time.npy", route_time)
 
         #######################
         # cdf
@@ -97,76 +87,35 @@ class HistGraph:
 
         fig = plt.figure(figsize=(10, 8))
         ax = fig.add_subplot(111)
+        x = floatRange(EVAL_LOW_TIME, EVAL_HIGH_TIME, cdf_route[2])
+        y = cdf_route[0]/(si.nodes-1)
 
-        plt.plot(floatRange(EVAL_LOW_TIME, EVAL_HIGH_TIME, cdf_avail[2]),
-                 cdf_avail[0]/(si.nodes),
-#                 cdf_avail[0]/max(cdf_avail[0]),
-                 'b', ls='steps', label='Availability')
-        plt.plot(floatRange(EVAL_LOW_TIME, EVAL_HIGH_TIME, cdf_purge[2]),
-                 cdf_purge[0]/(si.nodes),
-#                 cdf_purge[0]/max(cdf_purge[0]),
-                 'r', ls='steps', label='Purged')
+        plt.plot(x,
+                 y,
+#                 cdf_route[0]/max(cdf_route[0]),
+                 'b', ls='steps', label='Time to default route')
 
         plt.grid()
-        text = "#Nodes: " + str(si.nodes) + ", " + \
-            "Distance: " + str(si.distance) + ", " + \
-            "K: " + str(ei.defines["DISTRIBUTION_TRICKLE_K"])
-        title = 'Model Time to Consistency (cdf) \n(' + text + ')'
-        plt.title(title)
 
+        text = "#Nodes: " + str(si.nodes) + ", " + \
+            "Distance: " + str(si.distance)
+        title = 'Model Time to default route detected (cdf) \n(' + text + ')'
+        plt.title(title)
+    
         plt.ylim(0,
                  1.02)
         plt.xlim(EVAL_LOW_TIME,
                  EVAL_HIGH_TIME)
 
-        ax.set_xticks(range(0,
+        ax.set_xticklabels(range(EVAL_LOW_TIME,
                             EVAL_HIGH_TIME,
-                            60))
+                            1000),size='small')
         ax.set_yticks(floatRange(0, 1.1, 0.1))
 
-        plt.xlabel("Model Time [s]")
-        plt.ylabel("Nodes consistent [%]")
+        plt.xlabel("Time [ms]")
+        plt.ylabel("Percentage [%]")
 
         plt.legend(loc='lower right')
 
         plt.savefig(filenamebase+"_cdf_hist.pdf")
 
-        #######################
-        # pdf
-        #######################
-
-        fig = plt.figure(figsize=(10, 8))
-        ax = fig.add_subplot(111)
-
-        plt.plot(floatRange(EVAL_LOW_TIME, EVAL_HIGH_TIME, pdf_avail[2]),
-                 pdf_avail[0]/(si.nodes),
-#                 cdf_avail[0]/max(cdf_avail[0]),
-                 'b', ls='steps', label='Availability')
-#        plt.plot(floatRange(EVAL_LOW_TIME, EVAL_HIGH_TIME, pdf_purge[2]),
-#                 pdf_purge[0]/(si.nodes),
-##                 cdf_purge[0]/max(cdf_purge[0]),
-#                 'r', ls='steps', label='Purged')
-
-        plt.grid()
-        text = "#Nodes: " + str(si.nodes) + ", " + \
-            "Distance: " + str(si.distance) + ", " + \
-            "K: " + str(ei.defines["DISTRIBUTION_TRICKLE_K"])
-        title = 'Model Time to Consistency (pdf) \n(' + text + ')'
-        plt.title(title)
-
-        #plt.ylim(0,
-        #         1.02)
-        plt.xlim(EVAL_LOW_TIME,
-                 EVAL_HIGH_TIME)
-
-        #ax.set_xticks(range(0,
-        #                    EVAL_HIGH_TIME,
-        #                    60))
-        #ax.set_yticks(floatRange(0, 1.1, 0.1))
-
-        plt.xlabel("Model Time [s]")
-        plt.ylabel("")
-
-        plt.legend(loc='lower right')
-
-        plt.savefig(filenamebase+"_pdf_hist.pdf")

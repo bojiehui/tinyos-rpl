@@ -55,6 +55,7 @@ implementation{
   components RPLRankC as RankC;
   components RPLDAORoutingEngineC;
   components new ICMPCodeDispatchC(155) as ICMP_RS;
+  components RandomMlcgC;
 
   RootControl = Routing;
   StdControl = Routing;
@@ -71,4 +72,4 @@ implementation{
   Routing.RankControl -> RankC;
   Routing.RPLDAORoutingEngine -> RPLDAORoutingEngineC;
   Routing.IncreaseVersionTimer -> VersionTimer;
-}
+  Routing.Seed -> RandomMlcgC;}

@@ -32,65 +32,38 @@ class PacketMetric:
         time_re_c = re.compile(time_re)
         rec_node_re = 'from node (\d+).'
         rec_node_re_c = re.compile(rec_node_re)
-        hopcount_re = 'with lower hopcount (\d+).'
-        hopcount_re_c = re.compile(hopcount_re)
+#        hopcount_re = 'with lower hopcount (\d+).'
+#        hopcount_re_c = re.compile(hopcount_re)
 
-        sent_packets = np.zeros(si.nodes+2)
-        rec_packets  = np.zeros((si.nodes+2, si.nodes+2))
-        prr_rate     = np.zeros((si.nodes+2, si.nodes+2))
+        sent_packets = np.zeros(si.nodes+1)
+        sent_ICMP = np.zeros(si.nodes+1)
+        sent_ICMP_time = np.zeros(si.nodes+1)
+        rec_packets  = np.zeros((si.nodes+1, si.nodes+1))
+        prr_rate     = np.zeros((si.nodes+1, si.nodes+1))
+        hopcounts = np.ones(si.nodes+1) * -1
 
-        hopcounts = np.ones(si.nodes+2) * -1
-
-        if GRAPH_EVAL_LIST.count("SN") > 0 or GRAPH_EVAL_LIST.count("ContourGraph") > 0: 
-            rtt = Rtt()
-            rtt.execute(si)
+        rtt = Rtt()
+        rtt.execute(si)
 
         f = open(filenamebase+".log", "r")
         for line in f:
-            #if (line.find("TrickleSimC: sending") >= 0 and
-            #    line.find("packet") >= 0):
-            # without switching off node, only count Trickle messages
-            if (line.find("TrickleSimC: sending packet") >= 0):
-                #print line,
-
-                node_obj = node_re_c.search(line)
-                node = int(node_obj.group(1))
-
-                time_obj = time_re_c.search(line)
-                #print "\t", time_obj.group(0),
-                t = Time(time_obj.group(1),
-                         time_obj.group(2),
-                         time_obj.group(3))
-                #print t.in_second()
-                sent_packets[node] += 1
-
-            #if (line.find("TrickleSimC: Received") >= 0 and
-            #    line.find("packet from node") >= 0):
-            # without switching off node, only count Trickle messages
-            if (line.find("TrickleSimC: Received packet from node") >= 0):
-                node_obj = node_re_c.search(line)
-                rx_node = int(node_obj.group(1))
-
-                rec_node_obj = rec_node_re_c.search(line)
-                tx_node = int(rec_node_obj.group(1))
-
-                rec_packets[rx_node][tx_node] += 1
-
-            if line.find("TrickleSimC: Service is received with lower hopcount") >= 0:
-                #print line,
-
-                node_obj = node_re_c.search(line)
-                node = int(node_obj.group(1))
-
-                hopcount_obj = hopcount_re_c.search(line)
-                hopcount = int(hopcount_obj.group(1))
-
-                hopcounts[node] = hopcount
-
+             if (line.find("ICMPCore:Send") >= 0):
+                 node_obj = node_re_c.search(line)
+                 node = int(node_obj.group(1))
+               
+                 time_obj = time_re_c.search(line)
+                 t = Time(time_obj.group(1),
+                          time_obj.group(2),
+                          time_obj.group(3))
+                 sent_ICMP[node] += 1
+                
+                 #print line,"sent_ICMP",sent_ICMP
+                 if t.in_second() <= 600:
+                     sent_ICMP_time[node] += 1
+                
         f.close()
-
-        for id1 in range(1, si.nodes+2):
-            for id2 in range(1, si.nodes+2):
+        for id1 in range(1, si.nodes+1):
+            for id2 in range(1, si.nodes+1):
                 if id1 != id2:
                 # prr_rate[id1][id2] = (rec_packets[id1][id2] /
                 #                       float(sent_packets[id2]))
@@ -115,46 +88,28 @@ class PacketMetric:
 
                     prr_rate[id1][id2] = prr
 
-        of = open(filenamebase+"_packet.txt", "w")
+        of = open(filenamebase+"_packet.txt", "aw")
 
-       # print >> of, "Total number of Sent Packets"
-       # print >> of, np.sum(sent_packets)
-       # np.save(filenamebase+"_sent_packets.npy", np.sum(sent_packets))
+        print >> of, "\nTotal number of Sent ICMP Packets"
+        print >> of, np.sum(sent_ICMP)
+       # np.save(filenamebase+"_sent_ICMP.npy", np.sum(sent_ICMP))
 
-       # print >> of, "Number of Sent Packets individually"
-       # print >> of, np.sum(sent_packets)
-       # np.save(filenamebase+"_sent_packets_individual.npy", sent_packets)
 
-       # print >> of, "Sent Packets per Node"
-       # print >> of, sent_packets
-       # np.save(filenamebase+"_sent_packets_per_node.npy", sent_packets)
+        print >> of, "Sent ICMP per Node"
+        print >> of, sent_ICMP
+       # np.save(filenamebase+"_sent_ICMP_per_node.npy", sent_ICMP)
 
-       # print >> of, "Average Sent Packets per Node"
-       # print >> of, np.sum(sent_packets)/float(si.nodes)
-       # np.save(filenamebase+"_average_sent_packets_per_node.npy", np.sum(sent_packets)/float(si.nodes) )
+        print >> of, "\nTotal number of Sent ICMP Packets in 10 Minutes"
+        print >> of, np.sum(sent_ICMP_time)
+       # np.save(filenamebase+"_sent_ICMP.npy", np.sum(sent_ICMP_time))
 
-       # print >> of, "\nTotal number of Received Packets"
-       # print >> of, np.sum(rec_packets)
-       # np.save(filenamebase+"_received_packets.npy", np.sum(rec_packets))
-
-       # print >> of, "Received Packets per Node"
-       # print >> of, rec_packets
-       # np.save(filenamebase+"_received_packets_per_node.npy", rec_packets)
-
-       # print >> of, "Average Received Packets per Node"
-       # print >> of, np.sum(rec_packets)/float(si.nodes)
-       # np.save(filenamebase+"_average_received_packets_per_node.npy", np.sum(rec_packets)/float(si.nodes))
+        print >> of, "Sent ICMP per Node in 10 Minutes"
+        print >> of, sent_ICMP_time
+        np.save(filenamebase+"_sent_ICMP_per_node_time.npy", sent_ICMP_time)
 
         np.set_printoptions(threshold=np.nan)
         print >> of, "\nPRR"
         print >> of, prr_rate
         np.save(filenamebase+"_prr.npy", prr_rate)
-
-       # print >> of, "Received/Sent Ratio"
-       # print >> of, (np.sum(rec_packets)-1)/float(np.sum(sent_packets))
-
-       # print >> of, "\n\nReceived Hop Count"
-       # print >> of, hopcounts
-       # np.save(filenamebase+"_hopcounts.npy", hopcounts)
 
         of.close()

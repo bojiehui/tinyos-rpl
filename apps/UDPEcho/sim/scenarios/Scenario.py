@@ -31,7 +31,7 @@ class Scenario():
 
     def connect_neighbor(self, id, id2):
 	gain = self.calc_gain(id, id2)
-        print "gain = ",gain
+        print "id ,id2 =",id,id2,"gain =",gain
         self.r.add(id, id2,
                   0 - gain)# negative gain
     
@@ -47,7 +47,7 @@ class Scenario():
 
     def calc_neighbors(self, id, cutoff_distance):
         neigh = 0
-        for id2 in range(2, self.nodes+2):
+        for id2 in range(2, self.nodes+1):
             if id == id2:
                 # do not count the same node
                 continue
@@ -65,9 +65,9 @@ class Scenario():
         raise Exception("Pure virtual function")
 
     def setup_boot(self, randomize=False, randomseed=False):
-        for id in range(1, self.nodes+2):
+        for id in range(1, self.nodes+1):
             if randomize == False:
-                boottime = 1*self.t.ticksPerSecond() \
+                boottime = int(0.01*self.t.ticksPerSecond()) \
                     + id*10
             else:
                 if randomseed:
@@ -95,22 +95,22 @@ class Scenario():
         pickle.dump(self.id2xyz_dict, of)
         of.close()
 
-        for id in range(1, self.nodes+2):
+        for id in range(1, self.nodes+1):
             self.connect_neighbors(id)
 
-        for id in range(1, self.nodes+2):
+        for id in range(1, self.nodes+1):
             for i in range(0, 10000):
                 self.t.getNode(id).addNoiseTraceReading(-98)
 
-        for id in range(1, self.nodes+2):
+        for id in range(1, self.nodes+1):
             self.t.getNode(id).createNoiseModel()
 
-        neighbors_min  = np.zeros(self.nodes+2)
-        neighbors_mean = np.zeros(self.nodes+2)
-        neighbors_max  = np.zeros(self.nodes+2)
+        neighbors_min  = np.zeros(self.nodes+1)
+        neighbors_mean = np.zeros(self.nodes+1)
+        neighbors_max  = np.zeros(self.nodes+1)
 
 
-        for id in range(1, self.nodes+2):
+        for id in range(1, self.nodes+1):
             neighbors_min [id] = self.calc_neighbors(id, MIN_DISTANCE)
             neighbors_mean[id] = self.calc_neighbors(id, MEAN_DISTANCE)
             neighbors_max [id] = self.calc_neighbors(id, MAX_DISTANCE)
@@ -119,6 +119,6 @@ class Scenario():
       #  print "Neighbors(", MEAN_DISTANCE, "):", neighbors_mean
       #  print "Neighbors(", MAX_DISTANCE,  "):", neighbors_max
 
-        np.save(self.filenamebase+"_neighbors_min.npy", neighbors_min)
-        np.save(self.filenamebase+"_neighbors_mean.npy", neighbors_mean)
-        np.save(self.filenamebase+"_neighbors_max.npy", neighbors_max)
+#        np.save(self.filenamebase+"_neighbors_min.npy", neighbors_min)
+#        np.save(self.filenamebase+"_neighbors_mean.npy", neighbors_mean)
+#        np.save(self.filenamebase+"_neighbors_max.npy", neighbors_max)

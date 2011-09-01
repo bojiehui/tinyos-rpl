@@ -106,8 +106,8 @@ class SimulationSuite:
                                                     0,
                                                     nodes,
                                                     distance,
-                                                    SEC_AFTER_INJECT,
-                                                    TURNOFF_NODE_TIME,
+                                                   # SEC_AFTER_INJECT,
+                                                   # TURNOFF_NODE_TIME,
                                                     RANDOMIZE_BOOT,
                                                     RANDOMIZE_SEED)
 
@@ -115,7 +115,6 @@ class SimulationSuite:
                         pickle.dump(mc_si, open(mc_si.get_suite_full_dir()+'scenario_info_mc.pickle', 'wb'))
 
                         cmd = "python sim/run/EvaluationRunMonteCarlo.py" \
-                            + " -e " + self.stub_si.get_suite_full_dir()+"executable_info.pickle" \
                             + " -s " + mc_si.get_suite_full_dir()+"scenario_info_mc.pickle"
 
                         logger.info("*"*5 + " Evaluating (Monte Carlo): " + cmd)
@@ -127,8 +126,8 @@ class SimulationSuite:
                                            0,
                                            0,
                                            0,
-                                           SEC_AFTER_INJECT,
-                                           TURNOFF_NODE_TIME,
+                                          # SEC_AFTER_INJECT,
+                                          # TURNOFF_NODE_TIME,
                                            RANDOMIZE_BOOT,
                                            RANDOMIZE_SEED)
 
@@ -136,7 +135,6 @@ class SimulationSuite:
             pickle.dump(suite_si, open(suite_si.get_suite_full_dir()+'scenario_info_suite.pickle', 'wb'))
 
             cmd = "python sim/run/EvaluationSuite.py" \
-                + " -e " + self.stub_si.get_suite_full_dir()+"executable_info.pickle" \
                 + " -s " + suite_si.get_suite_full_dir()+"scenario_info_suite.pickle"
 
             logger.info("*"*5 + " Evaluating (Suite): " + cmd)
@@ -169,6 +167,7 @@ if __name__ == "__main__":
 
     if not optionsp.simulation and not optionsp.evaluation:
         optionsp.simulation = True
+        optionsp.evaluation = True
 
     if optionsp.simulation:
         logger.info("*"*10+" Starting Simulations")

@@ -165,7 +165,13 @@ implementation
 #ifdef RADIO_DEBUG
 		if( ++debugCounter >= 10 && call DiagMsg.record() )
 		{
-			debugCounter = 0;
+			if( radioState == RADIO_OFF && error == SUCCESS )
+			{
+				radioStart = localTime;
+				radioState = RADIO_ON;
+				startCount++;
+			}
+		}
 
 			call DiagMsg.str("traffic");
 			call DiagMsg.uint16(signal TrafficMonitorConfig.getTransmitAverage());

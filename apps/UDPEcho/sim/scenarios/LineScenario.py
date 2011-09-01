@@ -14,18 +14,18 @@ class LineScenario(Scenario):
         self.scen_z = 0
 
     def connect_neighbors(self, id):
-        for id2 in range(1, self.nodes+2):
+        for id2 in range(1, self.nodes+1):
             if id == id2:
                 # do not connect with the same node
                 continue
            # if abs(id - id2) == 1:
-            #    # only connect direct neighbor, with realistic
+                #    # only connect direct neighbor, with realistic
             #    # propagation, though
             #    self.connect_neighbor(id, id2) 
             self.connect_neighbor(id, id2)
 
     def setup_radio(self):
-        for id in range(1, self.nodes+2):
+        for id in range(1, self.nodes+1):
             # regular creation of nodes
 
             if id == 1:
@@ -41,6 +41,5 @@ class LineScenario(Scenario):
             self.id2xyz_dict[id] = (x, y, z)
             #self.xyz2id_dict[x]    = {}
             #self.xyz2id_dict[x][y][z] = id
-#	    self.nodetype_dict[id] = "air"	
-        self.id2xyz_dict[id] = (x, y, z)
+     
         self.setup_radio_general()

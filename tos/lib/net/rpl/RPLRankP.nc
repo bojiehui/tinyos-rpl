@@ -30,7 +30,7 @@
  */
 
 /**
- * RPLRankC.nc
+ * RPLRankP.nc
  * @ author JeongGil Ko (John) <jgko@cs.jhu.edu>
  */
 
@@ -142,9 +142,11 @@ implementation {
   }
 
   void memcpy_rpl(uint8_t* a, uint8_t* b, uint8_t len){
+    //memcpy(a, b, len);
     uint8_t i;
     for (i = 0 ; i < len ; i++)
       a[i] = b[i];
+
   }
 
 #define RPL_GLOBALADDR
@@ -376,7 +378,7 @@ implementation {
       if (parentSet[indexset].valid && parentSet[indexset].rank >= nodeRank) {
 	parentSet[indexset].valid = FALSE;
 	parentNum--;
-	printf("Evict all %d %d %d %d\n", parentNum, parentSet[indexset].rank, nodeRank, htons(parentSet[indexset].parentIP.s6_addr16[7]));
+	//printf("Evict all %d %d %d %d\n", parentNum, parentSet[indexset].rank, nodeRank, htons(parentSet[indexset].parentIP.s6_addr16[7]));
 	if(indexset == myParent){
 	  // i just cleared out my own parent...
 	  post newParentSearch();
@@ -493,8 +495,7 @@ printf_dbg("RankP forwarding approve 1 \n");
         sizeof(rpl_data_hdr_t) - offsetof(rpl_data_hdr_t, bitflag))
       return TRUE;
     o_bit = (data_hdr.bitflag & RPL_DATA_O_BIT_MASK) >> RPL_DATA_O_BIT_SHIFT ;
-    printf("approve test: %d %d %d %d %d \n", data_hdr.senderRank, data_hdr.instance_id, 
-           nodeRank, o_bit, call RPLRankInfo.getRank(next_hop));
+    //printf("approve test: %d %d %d %d %d \n", data_hdr.senderRank, data_hdr.instance_id, nodeRank, o_bit, call RPLRankInfo.getRank(next_hop));
 
     /* SDH : we'd want to dispatch on the instance id if there are
        multiple dags */
@@ -523,7 +524,7 @@ printf_dbg("RankP forwarding approve 1 \n");
         /*  this is not the first time  */
         /*  ditch this packet! */
 	call RouteInfo.inconsistency();
-	printf("NOT Approving: %d %d %d\n", data_hdr.senderRank, data_hdr.instance_id, inconsistent);
+	//printf("NOT Approving: %d %d %d\n", data_hdr.senderRank, data_hdr.instance_id, inconsistent);
         return FALSE;
       } else {
         /* just mark it */
@@ -539,7 +540,7 @@ printf_dbg("RankP forwarding approve 1 \n");
     }
 
   approve:
-    printf("Approving: %d %d %d\n", data_hdr.senderRank, data_hdr.instance_id, inconsistent);
+    //printf("Approving: %d %d %d\n", data_hdr.senderRank, data_hdr.instance_id, inconsistent);
     data_hdr.senderRank = nodeRank;
     // write back the modified data header
     iov_update(pkt->ip6_data, 
@@ -574,9 +575,9 @@ printf_dbg("RankP forwarding approve 1 \n");
     if (indexset != MAX_PARENT) { // not empty...
       parentSet[indexset].etx_hop = (parentSet[indexset].etx_hop * 6 + (etx_now * divideRank) * 4) / 10;
 
-      if (exceedThreshold(indexset, METRICID)) {
+      if (exceedThreshold(indexset, METRICID) || etx_now == BLIP_L2_RETRIES) {
 	evictParent(indexset);
-	if (indexset == myParent && parentNum > 0)
+	if(indexset == myParent && parentNum > 0)
 	  call RPLOF.recomputeRoutes();
       }
 
@@ -587,7 +588,7 @@ printf_dbg("RankP forwarding approve 1 \n");
       */
       getNewRank();
 
-      printf(">> P_ETX UPDATE %d %d %d %d %d %d\n", indexset, parentSet[indexset].etx_hop, etx_now, ntohs(parentSet[indexset].parentIP.s6_addr16[7]), nodeRank, parentNum);
+      //printf(">> P_ETX UPDATE %d %d %d %d %d %d\n", indexset, parentSet[indexset].etx_hop, etx_now, ntohs(parentSet[indexset].parentIP.s6_addr16[7]), nodeRank, parentNum);
 
       return;
     }
@@ -610,7 +611,7 @@ printf_dbg("getNewRank: 2 %i  \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
     nodeRank = call RPLOF.getRank();
 printf_dbg("getNewRank: 3 %i  \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 
-    printf("GOT new rank %d %d %d\n", TOS_NODE_ID, call RPLOF.getRank(), newParent);
+    //printf("GOT new rank %d %d %d\n", TOS_NODE_ID, call RPLOF.getRank(), newParent);
 
     if(newParent){
       minRank = nodeRank;
@@ -627,7 +628,7 @@ printf_dbg("getNewRank: 3 %i  \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
         nodeRank - minRank > MAX_RANK_INCREASE && MAX_RANK_INCREASE != 0) {
       // this is inconsistency!
       //call RPLOF.recomputeRoutes();
-      printf("Inconsistent %d\n", TOS_NODE_ID);
+      //printf("Inconsistent %d\n", TOS_NODE_ID);
       nodeRank = INFINITE_RANK;
       minRank = INFINITE_RANK;
       call RouteInfo.inconsistency();
@@ -807,23 +808,12 @@ printf_dbg("Status Rank: %i nach Reset \n",call RPLRankInfo.getRank(&ADDR_MY_IP)
                                       dio_dodag_config->MaxRankInc, 
                                       dio_dodag_config->MinHopRankInc);
 	call RPLOF.setMinHopRankIncrease(dio_dodag_config->MinHopRankInc);
-/* printf_dbg("Wo isser denn 17 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
-	/*
-	printf("Doub %d, min %d, redun %d, maxrank %d, minhop %d \n", 
-		   dio_dodag_config->DIOIntDoubl,
-		   dio_dodag_config->DIOIntMin, 
-		   dio_dodag_config->DIORedun, 
-		   dio_dodag_config->MaxRankInc, 
-		   dio_dodag_config->MinHopRankInc);
-	*/
       }
-    //printf("CONFIGURATION! %d %d %d %d %d\n", trackLength, ignore, dio_dodag_config->MaxRankInc, METRICID, OCP);
-      //OCP = 0; // temp for interop -- I know that Contiki is using OF0
     }
 
     ///////////////////////////////////////////////////////////////////////////////////
 
-    printf("PR %d NR %d OCP %d MID %d \n", pParentRank, nodeRank, OCP, METRICID);
+    //printf("PR %d NR %d OCP %d MID %d \n", pParentRank, nodeRank, OCP, METRICID);
 
     // temporaily keep the parent information first
     memcpy_rpl((uint8_t*)&tempParent.parentIP, (uint8_t*)&iph->ip6_src, sizeof(struct in6_addr)); //may be not right!!!
@@ -979,33 +969,31 @@ printf_dbg("Wo isser denn 27 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
   event void IP_DIO.recv(struct ip6_hdr *iph, void *payload, 
                          size_t len, struct ip6_metadata *meta){
     struct dio_base_t *dio;
-struct in6_addr ADDR_MY_IP;
+    struct in6_addr ADDR_MY_IP;
     dio = (struct dio_base_t *) payload;
- call IPAddress.getGlobalAddr(&ADDR_MY_IP);
- printf_in6addr_dbg(&ADDR_MY_IP);
-  if (!m_running){ return;}
+    call IPAddress.getGlobalAddr(&ADDR_MY_IP);
+    printf_in6addr_dbg(&ADDR_MY_IP);
 
-    //printf_in6addr(&iph->ip6_src);
-    //printf(" >  I GOT %d %d %d %d %d!!\n", iph->ip6_nxt, dio->icmpv6.code, dio->dagRank, nodeRank, parentNum);
-printf_dbg(" >  I GOT  %d ICMPv6 Code %d DIODakRank: %d Vorheriger Node Rank: %d ParentNum: %d!!\n", iph->ip6_nxt, dio->icmpv6.code, dio->dagRank, nodeRank, parentNum);
-printf_dbg("Status vor DAG akzeptiert in RankP Jetzt Rank: %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
- if(nodeRank != ROOT_RANK && dio->dagRank != 0xFFFF){
-   parseDIO(iph, dio);//hier wird es verschieden fuer node 2 und 3
+    if (!m_running) return;
 
-}
+    if(nodeRank != ROOT_RANK && dio->dagRank != 0xFFFF)
+      parseDIO(iph, dio);
 
     // evict parent if the node is advertizing 0xFFFF;
     if(dio->dagRank == 0xFFFF && getParent(&iph->ip6_src) != MAX_PARENT){
-printf_dbg("Status vor DAG akzeptiert in RankP 0.2 Jetzt Rank: %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
+      printf_dbg("Status vor DAG akzeptiert in RankP 0.2 Jetzt Rank: %i \n",
+                 call RPLRankInfo.getRank(&ADDR_MY_IP));
       evictParent(getParent(&iph->ip6_src));
     }
-printf_dbg("Status vor DAG akzeptiert 2 in RankP Jetzt Rank: %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
+    printf_dbg("Status vor DAG akzeptiert 2 in RankP Jetzt Rank: %i \n",
+               call RPLRankInfo.getRank(&ADDR_MY_IP));
 
     //leafState = FALSE;
     if (nodeRank > dio->dagRank || dio->dagRank == INFINITE_RANK) {
       if (!ignore) {
         /* SDH : where did this go? */
-printf_dbg("Status vor DAG akzeptiert 3 in RankP Jetzt Rank: %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
+        printf_dbg("Status vor DAG akzeptiert 3 in RankP Jetzt Rank: %i \n",
+                   call RPLRankInfo.getRank(&ADDR_MY_IP));
         signal IP_DIO_Filter.recv(iph, payload, len, meta);
       }
       ignore = FALSE;

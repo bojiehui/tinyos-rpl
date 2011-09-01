@@ -13,7 +13,7 @@ COMPONENT=UDPEchoC
 # you can compile with or without a routing protocol... of course,
 # without it, you will only be able to use link-local communication.
 PFLAGS += -DRPL_ROUTING -DRPL_STORING_MODE  -I$(TOSROOT)/tos/lib/net/rpl
-# -DRPL_OF_MRHOF
+ #-DRPL_OF_MRHOF
 
 # PFLAGS += -DRPL_ROUTING -I$(LOWPAN_ROOT)/tos/lib/net/rpl #non-storing mode
 # tell the 6lowpan layer to not generate hc-compressed headers
@@ -26,11 +26,11 @@ PFLAGS += -DRPL_ROUTING -DRPL_STORING_MODE  -I$(TOSROOT)/tos/lib/net/rpl
 #CFLAGS += -DREPORT_DEST=\"fec0::1\"
 
 #For simulation
-# CFLAGS += -DRPL_OF_MRHOF
+#CFLAGS += -DRPL_OF_MRHOF
 INCLUDES = -I..
 CFLAGS += $(INCLUDES)
 
-CFLAGS += -DPING_COUNT=5
+CFLAGS += -DPING_COUNT=100
 CFLAGS += -DNETWORK_SIZE=4
 
 CFLAGS += -DRPL_ROOT_ADDR=1

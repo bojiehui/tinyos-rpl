@@ -20,7 +20,7 @@ class MonteCarloContourGraph:
         pass
 
     def execute(self,
-                ei,
+              #  ei,
                 si,
                 iterations):
 
@@ -30,41 +30,67 @@ class MonteCarloContourGraph:
         print "filenamebase\t\t", si.create_montecarlo_filenamebase()
         print "="*40
 
-        total_consist = np.zeros(si.nodes+2)
-        #total_consist.fill(np.nan)
+        if SCENARIO == 'LineScenario':
+            point_no = 2*si.nodes+1
+            xarr = np.zeros(point_no)
+            yarr = np.zeros(point_no)
+            total_meanrtt = np.zeros(point_no)
+            new = np.zeros(point_no)
+        else:
+            xarr = np.zeros(si.nodes+1)
+            yarr = np.zeros(si.nodes+1)
+            total_meanrtt = np.zeros(si.nodes+1)
+            new = np.zeros(si.nodes+1)
 
         #loop over iterations
         for run in range(0, iterations):
-
             monte_si = copy.deepcopy(si)
             monte_si.run = run
-
-            consist_run = np.load(monte_si.createfilenamebase() + \
-                                      "_consist_contour.npy",
+            meanrtt_run = np.load(monte_si.createfilenamebase() + \
+                                      "_meanrtt.npy",
                                   "r")
-            #print "cr", consist_run
-            total_consist += consist_run
+            for i in range(0, si.nodes+1):
+                total_meanrtt[i] += meanrtt_run[i]
 
-        total_consist = total_consist / iterations
-
+        total_meanrtt = total_meanrtt / iterations
+        
         # do for last run, topology should not change over runs
         # (ensured by config)
-        print "Reading id2xy mapping from " + \
-            (monte_si.createfilenamebase()+"_id2xy.pickle")
-        ifile = open(monte_si.createfilenamebase()+"_id2xy.pickle", "r")
-        id2xy_dict = pickle.load(ifile)
+        print "Reading id2xyz mapping from " + \
+            (monte_si.createfilenamebase()+"_id2xyz.pickle")
+        ifile = open(monte_si.createfilenamebase()+"_id2xyz.pickle", "r")
+        id2xyz_dict = pickle.load(ifile)
         ifile.close()
 
-        xarr = np.zeros(si.nodes+2)
-        yarr = np.zeros(si.nodes+2)
-        for i in range(1, si.nodes+2):
-            (x, y) = id2xy_dict[i]
+        for i in range(1, si.nodes+1):
+            (x, y, z) = id2xyz_dict[i]
             xarr[i] = x
             yarr[i] = y
 
+        if SCENARIO == 'LineScenario':
+            total_meanrtt[0] = 0
+            for j in range(1+si.nodes,point_no):
+                index = j-si.nodes
+                xarr[j] = xarr[index]
+                yarr[j] = 1
+                total_meanrtt[j] = total_meanrtt[index]
+            print "total_meanrtt",total_meanrtt
+            for i in range (1,2*(si.nodes)+1):
+                if math.isnan(total_meanrtt[i]):
+                    total_meanrtt[i] = 2048
+                else:
+                    new[i] = total_meanrtt[i]
+        else:
+            for i in range (1,si.nodes+1):
+                if math.isnan(total_meanrtt[i]):
+                    total_meanrtt[i] = 2048
+                else:
+                    new[i] = total_meanrtt[i]
+            
+         
         packs = []
-        for i in range(1, si.nodes+2):
-            (x, y) = id2xy_dict[i]
+        for i in range(1, si.nodes+1):
+            (x, y, z) = id2xyz_dict[i]
             if math.sqrt(si.nodes) >= 10:
                 fs = 7
             else:
@@ -89,16 +115,12 @@ class MonteCarloContourGraph:
             ax.add_artist(p)
             p.set_clip_box(ax.bbox)
 
-        #print "! Max. Time to Consistency:", np.max(consist)
-        #print "! Min. Time to Consistency:", np.min(consist)
-
         LOW_LEVEL = 0
-        HIGH_LEVEL = 3*math.sqrt(si.nodes)
+        HIGH_LEVEL = max(new)+100
 
         levels = floatRange(LOW_LEVEL,
                             HIGH_LEVEL,
-                            .5)
-        #print levels
+                            5)
 
         my_cm = cm.jet
         my_cm.set_over('k')
@@ -109,12 +131,15 @@ class MonteCarloContourGraph:
 
         print ">>>>x", xarr
         print ">>>>y", yarr
-        print ">>>>consist", total_consist
-
-        xi = np.linspace(0, max(xarr), 100)
-        yi = np.linspace(0, max(yarr), 100)
-        zi = griddata(xarr[2:], yarr[2:], total_consist[2:], xi, yi)
-
+        print ">>>>meanrtt", total_meanrtt
+        if SCENARIO == 'LineScenario':
+            xi = np.linspace(0, max(xarr), 10)
+            yi = np.linspace(0, max(yarr), 10)
+        else:
+            xi = np.linspace(0, max(xarr), 100)
+            yi = np.linspace(0, max(yarr), 100)
+        
+        zi = griddata(xarr[1:], yarr[1:], total_meanrtt[1:], xi, yi)
         CS = plt.contourf(xi, yi, zi, levels,
                           cmap = my_cm, norm = my_norm,
                           extend='max')
@@ -128,37 +153,33 @@ class MonteCarloContourGraph:
             plt.grid()
 
         text = "#Nodes: " + str(si.nodes) + ", " + \
-            "Size: " + str(si.distance) + ", " + \
-            "K: " + str(ei.defines["DISTRIBUTION_TRICKLE_K"])
-        title = 'Model Time to Consistency [s]\n(' + text + ')'
+            "Inter node distance: " + str(si.distance) + "m," +\
+            " #Runs: " + str(iterations)
+        title = 'Mean RTT [ms]\n(' + text + ')'
 
         plt.title(title)
-
-        #if si.sqr_nodes <= 10:
-        #plt.yticks(range(si.sqr_nodes+1))
-        #plt.xticks(range(si.sqr_nodes+1))
-        #else:
-        #    plt.yticks(range(0, si.sqr_nodes, 2))
-        #    plt.xticks(range(0, si.sqr_nodes, 2))
-
-        if math.sqrt(si.nodes) >= 10:
-            lim_delta = 1
-        else:
-            lim_delta = .2
-
-        #plt.xlim(-lim_delta, si.sqr_nodes+lim_delta)
-        #plt.ylim(-lim_delta, si.sqr_nodes+lim_delta)
 
         if max(xarr) > max(yarr):
             max_xy = max(xarr)
         else:
             max_xy = max(yarr)
 
-        plt.xlim(-lim_delta, max_xy+lim_delta)
-        plt.ylim(-lim_delta, max_xy+lim_delta)
+        if si.distance >= 50:
+            lim_delta = 10
+        else:
+            lim_delta = 5
+    
+        if SCENARIO == 'GridScenario':
+           
+            plt.xlim(-lim_delta, max_xy+lim_delta)
+            plt.ylim(-lim_delta, max_xy+lim_delta)
 
+        if SCENARIO == 'LineScenario':    
+
+            plt.xlim(-lim_delta, max_xy+lim_delta)
+            plt.ylim(-lim_delta, lim_delta)
 
         plt.xlabel("x [m]")
         plt.ylabel("y [m]")
-
+        print si.create_montecarlo_filenamebase()
         plt.savefig(si.create_montecarlo_filenamebase()+"_montecarlo_contour.pdf")
