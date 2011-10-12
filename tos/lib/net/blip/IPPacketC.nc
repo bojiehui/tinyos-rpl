@@ -28,6 +28,7 @@ module IPPacketC {
 
     /* ignore extension headers until we find the desired header type
        or reach the transport-layer header. */
+
     while ((*search_type == IP6PKT_TRANSPORT && 
             (nxt == IPV6_HOP  || nxt == IPV6_ROUTING  || nxt == IPV6_FRAG ||
              nxt == IPV6_DEST || nxt == IPV6_MOBILITY)) || // consider IPV6_IPV6 a transport type

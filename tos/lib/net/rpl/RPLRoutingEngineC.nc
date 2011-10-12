@@ -33,7 +33,6 @@
  * RPLRoutingEngineC.nc
  * @ author JeongGil Ko (John) <jgko@cs.jhu.edu>
  */
-
 #include <RPL.h>
 
 configuration RPLRoutingEngineC{
@@ -72,4 +71,5 @@ implementation{
   Routing.RankControl -> RankC;
   Routing.RPLDAORoutingEngine -> RPLDAORoutingEngineC;
   Routing.IncreaseVersionTimer -> VersionTimer;
-  Routing.Seed -> RandomMlcgC;}
+  Routing.Seed -> RandomMlcgC;
+}

@@ -116,6 +116,7 @@ implementation
 
 		call Packet.setPayloadLength(msg, len);
 	    	call Ieee154PacketLayer.setSrcAddr(msg, call Ieee154PacketLayer.localAddr());
+                dbg("Driver.debug", "MessageLayerP: setDestAddr %hu\n", addr);
 		call Ieee154PacketLayer.setDestAddr(msg, addr);
 	    	call Ieee154PacketLayer.setDestPan(msg, call Ieee154PacketLayer.localPan());
 		
@@ -143,17 +144,21 @@ implementation
 
 	event message_t* SubReceive.receive(message_t* msg)
 	{ 	
-	        dbg("Bo-154Message","154Message:Receive @ %s.\n",sim_time_string());
-		if( call Ieee154PacketLayer.isForMe(msg) )
+	        dbg("Bo-154Message","154Message:SubReceive @ %s.\n",sim_time_string());
+		if( call Ieee154PacketLayer.isForMe(msg) ){
+                       dbg("Bo-154Message","154Message:packet is for me @ %s.\n",sim_time_string());
 			return signal Ieee154Receive.receive(msg,
 				getPayload(msg), call Packet.payloadLength(msg));
+                }
 		else
-			return msg;
+                  {
+                        dbg("Bo-154Message","154Message:packet is not for me @ %s.\n",sim_time_string());
+			return msg;}
 	}
 
 	default event message_t* Ieee154Receive.receive(message_t* msg, void* payload, uint8_t len)
 	{
-	  dbg("Bo-154Message","154Message:receive @ %s.\n",sim_time_string());
+	  dbg("Bo-154Message","154Message:Ieee154Receive @ %s.\n",sim_time_string());
 	  return msg;
 	}
 }

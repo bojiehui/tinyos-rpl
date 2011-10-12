@@ -91,6 +91,7 @@ module IPForwardingEngineP {
                                                struct in6_addr *next_hop,
                                                uint8_t ifindex) {
     struct route_entry *entry;
+    dbg("IPForwardingEngine","addRoute is called\n");
     /* no reason to support non-byte length prefixes for now... */
     if (prefix_len_bits % 8 != 0 || prefix_len_bits > 128) return ROUTE_INVAL_KEY;
     entry = call ForwardingTable.lookupRoute(prefix, prefix_len_bits);
@@ -103,7 +104,7 @@ module IPForwardingEngineP {
       /* got a default route and we didn't already have one */
       if (prefix_len_bits == 0) {
         post defaultRouteAddedTask();
-        // dbg("IPForwardingEngine-Entry","AddEntry: Default route added @ %s\n",sim_time_string());
+        dbg("IPForwardingEngine-Entry","AddEntry: A NEW Default route @ %s\n",sim_time_string());
       }
     }
     if (entry == NULL) 
@@ -151,6 +152,7 @@ module IPForwardingEngineP {
 		   min(prefix_len_bits, routing_table[i].prefixlen) / 8) == 0 && 
             prefix_len_bits))) {
         /* match! */
+        dbg("IPForwardingEngine","Index of route table %i\n", i);
         return &routing_table[i];
       }
     }
@@ -178,7 +180,7 @@ module IPForwardingEngineP {
 
 #if defined (PRINTFUART_ENABLED) || defined (TOSSIM)
     if (!call PrintTimer.isRunning())
-      call PrintTimer.startPeriodic(10000);
+      call PrintTimer.startPeriodic(100);
 #endif
 
     if (call IPAddress.isLocalAddress(&pkt->ip6_hdr.ip6_dst) && 
@@ -224,6 +226,7 @@ module IPForwardingEngineP {
                                              struct ip6_metadata *meta) { 
     static char print_buf_src[128];
     static char print_buf_dst[128];
+    static char print_buf_nexthop[128];
     struct ip6_packet pkt;
     struct in6_addr *next_hop;
     size_t len = ntohs(iph->ip6_plen);
@@ -234,21 +237,23 @@ module IPForwardingEngineP {
       .iov_base = payload,
       .iov_len  = len,
     };
-
+    dbg("IPForwardingEngine","IPForwardingEngine:IPForward.recv\n");
     /* signaled before *any* processing  */
     signal IPRaw.recv(iph, payload, len, meta);
 
     if (call IPAddress.isLocalAddress(&iph->ip6_dst)) {
       /* local delivery */
-      // printf("Local delivery \n");
+      dbg("IPForwardingEngine","IPForwardingEngine:Local delivery \n");
       signal IP.recv(iph, payload, len, meta);
     } else {
       /* forwarding */
       uint8_t nxt_hdr = IPV6_ROUTING;
       int header_off = call IPPacket.findHeader(&v, iph->ip6_nxt, &nxt_hdr);
+      dbg("IPForwardingEngine","IPForwardingEngine:forwarding \n");
       if (!(--iph->ip6_hlim)) {
         /* ICMP may send time exceeded */
         // call ForwardingEvents.drop(iph, payload, len, ROUTE_DROP_HLIM);
+        dbg("IPForwardingEngine","Time exceeded in ICMP!\n");
         return;
       }
 
@@ -263,17 +268,21 @@ module IPForwardingEngineP {
         struct route_entry *next_hop_entry = 
           call ForwardingTable.lookupRoute(iph->ip6_dst.s6_addr,
                                            128);
+ 
         if (next_hop_entry == NULL) {
           /* oops, no route. */
           /* RPL will reencapsulate the packet in some cases here */
           // call ForwardingEvents.drop(iph, payload, len, ROUTE_DROP_NOROUTE);
+          dbg("IPForwardingEngine","IPForwardingEngine: no next hop entry\n");
           return; 
         }
         next_hop = &next_hop_entry->next_hop;
         next_hop_key = next_hop_entry->key;
         next_hop_ifindex = next_hop_entry->ifindex;
+        inet_ntop6(next_hop, print_buf_nexthop, 128);
+        dbg ("IPForwardingEngine", "Next hop is %s @ %s \n", print_buf_nexthop, sim_time_string());
       }
-
+     
       memcpy(&pkt.ip6_hdr, iph, sizeof(struct ip6_hdr));
       pkt.ip6_data = &v;
 
@@ -282,10 +291,13 @@ module IPForwardingEngineP {
       /* RPL uses this to update the flow label fields */
 
       if (!(signal ForwardingEvents.approve[next_hop_ifindex](&pkt, next_hop)))
-        return;
+            return;
+  
       inet_ntop6(&pkt.ip6_hdr.ip6_src, print_buf_src, 128);
       inet_ntop6(&pkt.ip6_hdr.ip6_dst, print_buf_dst, 128);
+      dbg ("IPForwardingEngine", "Next hop is %s 2@ %s \n", print_buf_nexthop, sim_time_string());
       dbg ("IPForwardingEngine-PTr", "Node: %i is forwarding Packet from src: %s to dst: %s Time: %s \n",TOS_NODE_ID, print_buf_src, print_buf_dst, sim_time_string());
+         
       call IPForward.send[next_hop_ifindex](next_hop, &pkt, (void *)next_hop_key);
     }
   }

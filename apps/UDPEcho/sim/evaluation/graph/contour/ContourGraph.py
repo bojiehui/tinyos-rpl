@@ -117,6 +117,7 @@ class ContourGraph:
 
         #print ">>>>x", xarr
         #print ">>>>y", yarr
+        print ">>>>meanrtt",mean
         if SCENARIO == 'LineScenario':
             xi = np.linspace(0, max(xarr),10)
             yi = np.linspace(0, max(yarr),10)

@@ -1,6 +1,6 @@
 
 noinst_PROGRAMS=compress decompress
-CFLAGS += -I.. -I../.. -I../../../../../../tos/types -DPC 
+CFLAGS += -I.. -I../.. -I../../../../../../tos/types -DPC -fPIC
 
 compress_SOURCES=compress.c ../utility.c
 decompress_SOURCES=decompress.c ../utility.c

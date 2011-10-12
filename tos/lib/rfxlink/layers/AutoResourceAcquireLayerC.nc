@@ -57,7 +57,7 @@ implementation
 			error_t result = call SubSend.send(msg);
 			if( result != SUCCESS )
 				call Resource.release();
-			dbg("Bo-AutoResource","AutoResource:Send.\n");
+	
 			return result;
 		}
 

@@ -33,6 +33,7 @@
  */
 
 #include <Ieee154PacketLayer.h>
+#include <lib6lowpan/ip.h>
 
 generic module Ieee154PacketLayerP()
 {
@@ -184,12 +185,14 @@ implementation
 
 	async command uint16_t Ieee154PacketLayer.getDestAddr(message_t* msg)
 	{
+                dbg("Driver.debug", "getDestAddr %hu\n", getHeader(msg)->dest);
 		return getHeader(msg)->dest;
 	}
 
 	async command void Ieee154PacketLayer.setDestAddr(message_t* msg, uint16_t addr)
 	{
 		getHeader(msg)->dest = addr;
+                dbg("Driver.debug", "setDestAddr %hu\n", addr);
 	}
 
 	async command uint16_t Ieee154PacketLayer.getSrcAddr(message_t* msg)
@@ -227,10 +230,11 @@ implementation
 	}
 
 	async command bool Ieee154PacketLayer.isForMe(message_t* msg)
-	{
+	{      
 		ieee154_saddr_t addr = call Ieee154PacketLayer.getDestAddr(msg);
 		return (addr == call Ieee154PacketLayer.localAddr() || addr == IEEE154_BROADCAST_ADDR)
 			&& call Ieee154PacketLayer.getDestPan(msg) == call Ieee154PacketLayer.localPan();
+		
 	}
 
 	async event void ActiveMessageAddress.changed()

@@ -65,8 +65,8 @@ implementation{
   uint16_t nodeEtx = divideRank;
   uint16_t prevParent;
   bool newParent = FALSE;
-  //uint16_t desiredParent = MAX_PARENT;
-  uint16_t desiredParent = 0;//with this hardcoding it works */
+  uint16_t desiredParent = MAX_PARENT;
+  //uint16_t desiredParent = 0;//with this hardcoding it works */
   uint16_t min_hop_rank_inc = 1;
 
   route_key_t route_key = ROUTE_INVAL_KEY;
@@ -130,25 +130,28 @@ implementation{
     prevEtx = nodeEtx;
     prevRank = nodeRank;
 
-    nodeEtx = parentNode->etx_hop + parentNode -> etx;
+      nodeEtx = parentNode->etx_hop + parentNode -> etx;
     // -1 because the ext computation will add at least 1
-    nodeRank = (parentNode->etx_hop / divideRank * min_hop_rank_inc) + parentNode->rank;
+     nodeRank = (parentNode->etx_hop / divideRank * min_hop_rank_inc) + parentNode->rank;
+    //nodeEtx = parentNode->etx_hop;
+    // -1 because the ext computation will add at least 1
+    //nodeRank = parentNode->rank + min_hop_rank_inc;
 
-    //printf(">>> %d %d %d %d %d %d %d\n", desiredParent, parentNode->etx_hop, divideRank, parentNode->rank, (min_hop_rank_inc - 1), nodeRank, prevRank);
+     printf(">>> nodeEtx:%d, divideRank:%d, min_hop_rank_inc:%d, ParentNodeRank:%d, nodeRank:%u, prevRank:%d\n", parentNode->etx_hop, divideRank,min_hop_rank_inc, parentNode->rank, nodeRank, prevRank);
     //printfflush();
 
     if (nodeRank <= ROOT_RANK && prevRank > 1) {
-printf_dbg("Recalculate Rank 2  \n");
+//printf_dbg("Recalculate Rank 2  \n");
       nodeRank = prevRank;
       nodeEtx = prevEtx;
     }
 
     if(newParent){
-printf_dbg("Recalculate Rank 3  \n");
+printf("MRHOF: newParent!! \n");
       newParent = FALSE;
       return TRUE;
     }else{
-printf_dbg("Recalculate Rank 4  \n");
+//printf_dbg("Recalculate Rank 4  \n");
       return FALSE;
     }
   }
@@ -163,26 +166,29 @@ printf_dbg("Recalculate Rank 4  \n");
     //choose the first valid
 
     parentNode = call ParentTable.get(min);
+    printf("MRHOF parentNode = %u 1\n",  (uint8_t)htons(parentNode->parentIP.s6_addr16[7]));
     while(!parentNode->valid && min < MAX_PARENT){
       min++;
       parentNode = call ParentTable.get(min);
+      printf("MRHOF parentNode = %u 2\n", (uint8_t)htons(parentNode->parentIP.s6_addr16[7]));
     }
 
     minDesired = parentNode->etx_hop + parentNode->etx;
 
     if (min == MAX_PARENT){ 
+      dbg("MRHOF","MRHOF:Reset Rank and detected inconsistency\n");
       call RPLOF.resetRank();
       call RPLRoute.inconsistency();
       //call ForwardingTable.delRoute(route_key);
       route_key = ROUTE_INVAL_KEY;
       return FALSE;
     }
-
+    
     //printf("%d %d %d %d \n", parentNode->etx, parentNode->rank, parentNode->etx_hop, min);
 
     //parentNode = call ParentTable.get(minDesired);
     parentNode = call ParentTable.get(desiredParent);
-
+    printf("MRHOF parentNode = %d 3\n", htons(parentNode->parentIP.s6_addr16[7]));
     if(htons(parentNode->parentIP.s6_addr16[7]) != 0)
       minMetric = parentNode->etx_hop + parentNode->etx; // update to most recent etx
 
@@ -203,37 +209,38 @@ printf_dbg("Recalculate Rank 4  \n");
 
     if(parentNode->rank > nodeRank || parentNode->rank == INFINITE_RANK){
       printf("SELECTED PARENT is FFFF %d\n", TOS_NODE_ID);
-      //call ForwardingTable.delRoute(route_key);
+      call ForwardingTable.delRoute(route_key);
       route_key = ROUTE_INVAL_KEY;
       return FAIL;
     }
-
+    printf("MRHOF min = %d desiredParent = %d\n", min, desiredParent);
     previousParent = call ParentTable.get(desiredParent);
+    //previousParent = call ParentTable.get(min);
 
     if(minDesired + divideRank*STABILITY_BOUND/10 >= minMetric && minMetric !=0 && previousParent->valid){ 
       // if the min measurement (minDesired) is not significantly better than the previous parent's (minMetric), stay with what we have...
       min = desiredParent;
       minDesired = minMetric;
+      printf("MRHOF min measurement is much better!!\n");
     }
 
     //printf(" <> %d %d %d %d \n", parentNode->etx, parentNode->rank, parentNode->etx_hop, min);
 
     minMetric = minDesired;
     desiredParent = min;
+    printf("MRHOF desiredParent %d\n", desiredParent);
     parentNode = call ParentTable.get(desiredParent);
-
-    //printf("MRHOF %d %d %u %u\n", TOS_NODE_ID, htons(parentNode->parentIP.s6_addr16[7]), parentNode->etx_hop, parentNode->etx);
+    printf("MRHOF %d %d %u %u\n", TOS_NODE_ID, htons(parentNode->parentIP.s6_addr16[7]), parentNode->etx_hop, parentNode->etx);
 
     /* set the new default route */
     /* set one of the below of maybe set both? */
     //call ForwardingTable.addRoute((const uint8_t*)&DODAGID, 128, &parentNode->parentIP, RPL_IFACE);
-
     route_key = call ForwardingTable.addRoute(NULL, 0, &parentNode->parentIP, RPL_IFACE); // will this give me the default path?
 
     if(prevParent != parentNode->parentIP.s6_addr16[7]){
       //printf(">> New Parent %d %d %lu \n", TOS_NODE_ID, htons(parentNode->parentIP.s6_addr16[7]), parentChanges++);
-      printf("#L %u 0\n", (uint8_t)htons(prevParent));
-      printf("#L %u 1\n", (uint8_t)htons(parentNode->parentIP.s6_addr16[7]));
+      printf("#L previous parent %u 0\n", (uint8_t)htons(prevParent));
+      printf("#L new parent %u 1\n", (uint8_t)htons(parentNode->parentIP.s6_addr16[7]));
       newParent = TRUE;
       call RPLDAO.newParent();
     }

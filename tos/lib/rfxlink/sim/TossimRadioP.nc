@@ -149,7 +149,8 @@ implementation
 
 	command void ActiveMessageConfig.setDestination(message_t* msg, am_addr_t addr)
 	{
-		call Ieee154PacketLayer.setDestAddr(msg, addr);
+          dbg("Driver.debug", "RadioP: setDestAddr %hu\n", addr);
+          call Ieee154PacketLayer.setDestAddr(msg, addr);
 	}
 
 	command am_addr_t ActiveMessageConfig.source(message_t* msg)

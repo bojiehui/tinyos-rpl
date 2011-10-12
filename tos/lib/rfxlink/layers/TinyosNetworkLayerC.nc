@@ -80,7 +80,7 @@ implementation
 
 	command error_t Ieee154Send.send(message_t* msg)
 	{  		
-		dbg("Bo-Network","Network:Send @ %s.\n",sim_time_string());
+		dbg("Bo-Network","Network:Tfram enabled Send @ %s.\n",sim_time_string());
 		return call SubSend.send(msg);
 	}
 
@@ -220,12 +220,12 @@ implementation
 			signal TinyosSend.sendDone(msg, result);
 		else
 			signal Ieee154Send.sendDone(msg, result);
-		dbg("Bo-Network","Network:Send Done @ %s.\n",sim_time_string());
+		dbg("Bo-Network","Network:Send Done (No Ieee154frames)  @ %s.\n",sim_time_string());
 	}
 
 	event message_t* SubReceive.receive(message_t* msg)
 	{	
-	        dbg("Bo-Network","Network:receive @ %s.\n",sim_time_string());
+	        dbg("Bo-Network","Network:receive (No Ieee154frames)@ %s.\n",sim_time_string());
 		if( getHeader(msg)->network == TINYOS_6LOWPAN_NETWORK_ID )
 			return signal TinyosReceive.receive(msg);
 		else

@@ -437,6 +437,9 @@ void SENDINFO_DECR(struct send_info *si) {
       goto fail;
     }
 
+    dbg("Driver.debug", "IPDispatchP: send %x %x\n", s_entry->frame_addr, s_entry->frame_addr->ieee_dst);
+    dbg("Driver.debug", "IPDispatchP: send dest %hu\n", s_entry->frame_addr->ieee_dst.i_saddr);
+
 #warning "CHECK: Taking 15.4 short address for destination in Ieee154Send.send()"
     if ((call Ieee154Send.send(s_entry->frame_addr->ieee_dst.i_saddr,
 			       s_entry->msg,
@@ -460,6 +463,7 @@ void SENDINFO_DECR(struct send_info *si) {
     call FragPool.put(s_entry->msg);
     call SendEntryPool.put(s_entry);
     call SendQueue.dequeue();
+    ip_free(s_entry->frame_addr);
   }
   
 
@@ -480,6 +484,8 @@ void SENDINFO_DECR(struct send_info *si) {
     struct lowpan_ctx ctx;
     struct send_info  *s_info;
     struct send_entry *s_entry;
+    struct ieee154_frame_addr *s_fa;
+
     message_t *outgoing;
 
     int frag_len = 1;
@@ -488,6 +494,9 @@ void SENDINFO_DECR(struct send_info *si) {
     if (state != S_RUNNING) {
       return EOFF;
     }
+
+    dbg("Driver.debug", "IPDispatchP: IPLower.send dest %hu\n", frame_addr->ieee_dst.i_saddr);
+    dbg("Driver.debug", "IPDispatchP: IPLower.send dest mode %hu\n", frame_addr->ieee_dst.ieee_mode);
 
     /* set version to 6 in case upper layers forgot */
     msg->ip6_hdr.ip6_vfc &= ~IPV6_VERSION_MASK;
@@ -508,8 +517,10 @@ void SENDINFO_DECR(struct send_info *si) {
       outgoing = call FragPool.get();
 
       if (s_entry == NULL || outgoing == NULL) {
-        if (s_entry != NULL)
+        if (s_entry != NULL) {
+          dbg("Driver.debug", "IPDispatchP: IPLower.send SendEntryPool.put()\n");
           call SendEntryPool.put(s_entry);
+        }
         if (outgoing != NULL)
           call FragPool.put(outgoing);
         // this will cause any fragments we have already enqueued to
@@ -546,10 +557,26 @@ void SENDINFO_DECR(struct send_info *si) {
         goto done;
       }
 
+      dbg("Driver.debug", "IPDispatchP: IPLower.send %x %x\n",
+          s_entry->frame_addr, frame_addr);
+
       s_info->link_fragments++;
       s_entry->msg = outgoing;
       s_entry->info = s_info;
-      s_entry->frame_addr = frame_addr;
+
+      dbg("Driver.debug", "IPDispatchP: msg %x\n",
+          s_entry->msg);
+
+      s_fa = (struct ieee154_frame_addr *)ip_malloc(sizeof(struct ieee154_frame_addr));
+
+      memcpy(&(s_fa->ieee_dst), &(frame_addr->ieee_dst), sizeof(ieee154_addr_t));
+      memcpy(&(s_fa->ieee_src), &(frame_addr->ieee_src), sizeof(ieee154_addr_t));
+      memcpy(&(s_fa->ieee_dstpan), &(frame_addr->ieee_dstpan), sizeof(ieee154_panid_t));
+
+      s_entry->frame_addr = s_fa;
+      dbg("Driver.debug", "IPDispatchP: IPLower.send dest %hu\n", s_entry->frame_addr->ieee_dst.i_saddr);
+      dbg("Driver.debug", "IPDispatchP: IPLower.send src %hu\n", s_entry->frame_addr->ieee_src.i_saddr);
+      dbg("Driver.debug", "IPDispatchP: IPLower.send dest mode %hu\n", s_entry->frame_addr->ieee_dst.ieee_mode);
 
       /* configure the L2 */
       if (frame_addr->ieee_dst.ieee_mode == IEEE154_ADDR_SHORT &&
@@ -603,6 +630,7 @@ void SENDINFO_DECR(struct send_info *si) {
     call FragPool.put(s_entry->msg);
     call SendEntryPool.put(s_entry);
     call SendQueue.dequeue();
+    ip_free(s_entry->frame_addr);
 
     post sendTask();
   }

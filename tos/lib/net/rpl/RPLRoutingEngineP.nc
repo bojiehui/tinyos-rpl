@@ -305,7 +305,6 @@ implementation{
                ntohs(DODAGID.s6_addr16[7]), msg.dagRank, tricklePeriod);
     */
     printf("TXDIO %d %lu \n", TOS_NODE_ID, ++countdio);
-    dbg("RPLRoutingEngine","TXDIO: %d %lu \n", TOS_NODE_ID, ++countdio);
     //printf("RANK %d %d %d\n", call RPLRankInfo.getRank(&ADDR_MY_IP), call RPLRankInfo.getEtx(), call RPLRankInfo.hasParent());
 
     if (UNICAST_DIO) {
