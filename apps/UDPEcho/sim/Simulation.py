@@ -60,8 +60,6 @@ class SimulationSuite:
                                              run,
                                              nodes,
                                              distance,
-                                           #  SEC_AFTER_INJECT,
-                                           #  TURNOFF_NODE_TIME,
                                              RANDOMIZE_BOOT,
                                              RANDOMIZE_SEED)
                     os.makedirs(si.get_full_dir())
@@ -95,7 +93,6 @@ class SimulationSuite:
                         pickle.dump(si, open(si.get_suite_full_dir()+'scenario_info_run.pickle', 'wb'))
 
                         cmd = "python sim/run/EvaluationRun.py" + " -s " + si.get_suite_full_dir()+"scenario_info_run.pickle"
-                      #      + " -e " + self.stub_si.get_suite_full_dir()+"executable_info.pickle" \
 
                         logger.info("*"*5 + " Evaluating: " + cmd)
                         os.system(cmd)
@@ -106,8 +103,6 @@ class SimulationSuite:
                                                     0,
                                                     nodes,
                                                     distance,
-                                                   # SEC_AFTER_INJECT,
-                                                   # TURNOFF_NODE_TIME,
                                                     RANDOMIZE_BOOT,
                                                     RANDOMIZE_SEED)
 
@@ -126,8 +121,6 @@ class SimulationSuite:
                                            0,
                                            0,
                                            0,
-                                          # SEC_AFTER_INJECT,
-                                          # TURNOFF_NODE_TIME,
                                            RANDOMIZE_BOOT,
                                            RANDOMIZE_SEED)
 
@@ -183,7 +176,7 @@ if __name__ == "__main__":
         ff = open(ss.stub_si.get_suite_full_dir()+"finishtime_"+ datetime.now().strftime("%Y_%m_%d__%H_%M_%S"), "w")
         ff.close()
 
-    #logger.info("~"*40+" Finished Suite")
+    logger.info("~"*40+" Finished Suite")
 
-    #logger.info("")
-    #logger.info("")
+    logger.info("")
+    logger.info("")
