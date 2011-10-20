@@ -90,7 +90,7 @@
 
 #endif // MRHOF
 
-#define MAX_PARENT 20
+#define MAX_PARENT 20 
 #define MAX_HOPCOUNT 30
 #define RPL_QUEUE_SIZE 5
 #define RPL_MAX_SOURCEROUTE 10
@@ -254,7 +254,8 @@ enum {
   RPL_DEFAULT_INSTANCE = 0,
   NUMBER_OF_PARENTS = 10,
   DIS_INTERVAL = 3*1024U,
-  DEFAULT_LIFETIME = 1024L * 60 * 20, // 20 mins
+  // DEFAULT_LIFETIME = 1024L * 60 * 20, // 20 mins
+  DEFAULT_LIFETIME = 1024L * 60 * 120, // set by bo for simulation, was 20 mins
 };
 
 /*RFC defined parameters*/
