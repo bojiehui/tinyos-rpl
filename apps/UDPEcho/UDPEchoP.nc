@@ -146,8 +146,8 @@ module UDPEchoP {
         payload.data[DATA_SIZE-1]= 0xFF;
 
         call Leds.led1Toggle();
-        dbg ("MsgExchange", "MsgExchange: Send: Node %i is sending UDP Message to Node = %X on Port = %i SequenceNr: %i \n",TOS_NODE_ID, ntohs(route_dest.sin6_addr.s6_addr16[7]), ntohs(route_dest.sin6_port), payload.counter);
-        dbg ("MsgExchange", "Send at %s \n", sim_time_string());
+        dbg ("MsgExchange", "MsgExchange: Send: Node %i is sending UDP Message to Node = %X on Port = %i \n",TOS_NODE_ID, ntohs(route_dest.sin6_addr.s6_addr16[7]), ntohs(route_dest.sin6_port));
+        dbg ("MsgExchange", "Send at %s SequenceNr: %i\n", sim_time_string(), payload.counter);
         dbg ("MsgRequests", "Request: Node: %i calls Node: %X SequenceNr: %i Time: %s \n",TOS_NODE_ID, ntohs(route_dest.sin6_addr.s6_addr16[7]), payload.counter, sim_time_string());
 
         call UDPSend.sendto(&route_dest, &payload, sizeof(payload));}
@@ -179,8 +179,8 @@ module UDPEchoP {
     static char print_buf3[128];
 
     inet_ntop6(&from->sin6_addr, print_buf3, 128);
-    dbg ("MsgExchange", "Receive: Got response from address = %s Port = %i SequenceNr: %i\n", print_buf3, ntohs(from->sin6_port), payload.counter);
-    dbg ("MsgExchange", "Receive at %s \n", sim_time_string());
+    dbg ("MsgExchange", "MsgExchange: Receive: Got response from address = %s Port = %i\n", print_buf3, ntohs(from->sin6_port));
+    dbg ("MsgExchange", "Receive at %s SequenceNr: %i\n", sim_time_string(), payload.counter);
     dbg ("MsgRequests", "Response: Node: %s answered Node: %i SequenceNr: %i Time: %s\n",print_buf3, TOS_NODE_ID, message_rec->counter , sim_time_string());
 }
   

@@ -1,3 +1,4 @@
+
 COMPONENT=UDPEchoC
 # uncomment this for network programming support
 # BOOTLOADER=tosboot
@@ -25,13 +26,13 @@ PFLAGS += -DRPL_ROUTING -DRPL_STORING_MODE  -I$(TOSROOT)/tos/lib/net/rpl
 # CFLAGS += -DREPORT_DEST=\"fe80::22:ff:fe00:1\"
 #CFLAGS += -DREPORT_DEST=\"fec0::1\"
 
-#For simulatio
+#For simulation
 INCLUDES = -I..
 CFLAGS += $(INCLUDES)
 
 CFLAGS += -DRPL_OF_MRHOF
 
-CFLAGS += -DPING_COUNT=50
+CFLAGS += -DPING_COUNT=1
 CFLAGS += -DNETWORK_SIZE=4
 
 CFLAGS += -DRPL_ROOT_ADDR=1
@@ -43,7 +44,7 @@ CFLAGS += -DSOURCE_NODE_PORT=1
 CFLAGS += -DDEST_NODE_IP=\"fec0::2\"
 CFLAGS += -DDEST_NODE_PORT=2
 
-CFLAGS += -DBLIP_L2_RETRIES=3 -DBLIP_L2_DELAY=103
+#CFLAGS += -DBLIP_L2_RETRIES=3 -DBLIP_L2_DELAY=103
 
 # if you're using DHCP, set this to try and derive a 16-bit address
 # from the IA received from the server.  This will work if the server

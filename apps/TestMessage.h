@@ -39,8 +39,8 @@ enum {
   AM_TEST_MSG = 10,
   NO_PACKET = 3000, //was 500 originally used by mote
   WAITTIME = 128, //was 10000 originally used by mote
-  PERIODIC_REQUEST = 1024, //was 10000 originally used by mote
-  START_DELAY_TIMER =1, //to delay mote starting to send
+  PERIODIC_REQUEST = 2048, //was 10000 originally used by mote
+  START_DELAY_TIMER =512, //to delay mote starting to send
   BUTTON_DELAY_TIMER = 5000,
 };
 
