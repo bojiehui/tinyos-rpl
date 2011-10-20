@@ -5,14 +5,12 @@ from sim.utils.helper import *
 from sim.config import *
 
 class GridScenario(Scenario):
-#    def __init__(self, t, ei, si):
     def __init__(self, t, si):
         """
         """
         if math.sqrt(si.nodes) != math.ceil(math.sqrt(si.nodes)):
             raise Exception("Grid scenario required sqrt'able number of nodes")
 
-#        Scenario.__init__(self, t, ei, si)
         Scenario.__init__(self, t, si)
 
         self.distance = si.distance
@@ -45,6 +43,5 @@ class GridScenario(Scenario):
             self.id2xyz_dict[id]   = (x, y, z)
             #self.xyz2id_dict[x]    = {}
             #self.xyz2id_dict[x][y][z] = id
-	    #print self.xyz2id_dict
 
         self.setup_radio_general()

@@ -10,8 +10,6 @@ class ScenarioInformation:
                  run,
                  nodes,
                  distance,
-                # sec_after_inject,
-                # turnoff_node_time,
                  randomize_boot,
                  randomize_seed):
 
@@ -19,10 +17,6 @@ class ScenarioInformation:
         self.run = run
         self.nodes = nodes
         self.distance = distance
-        #self.distance = get_distance(distance, sqr_nodes)
-
-       # self.sec_after_inject = sec_after_inject
-       # self.turnoff_node_time = turnoff_node_time
 
         self.randomize_boot = randomize_boot # CHECK: OK here?
         self.randomize_seed = randomize_seed # CHECK: OK here?

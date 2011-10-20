@@ -137,9 +137,9 @@ class ContainerScenario(Scenario):
         #print "Neighbors(", MEAN_DISTANCE, "):", neighbors_mean
         #print "Neighbors(", MAX_DISTANCE,  "):", neighbors_max
 
-        np.save(self.filenamebase+"_neighbors_min.npy", neighbors_min)
-        np.save(self.filenamebase+"_neighbors_mean.npy", neighbors_mean)
-        np.save(self.filenamebase+"_neighbors_max.npy", neighbors_max)
+#        np.save(self.filenamebase+"_neighbors_min.npy", neighbors_min)
+#        np.save(self.filenamebase+"_neighbors_mean.npy", neighbors_mean)
+#        np.save(self.filenamebase+"_neighbors_max.npy", neighbors_max)
 
     def setup_radio(self):
 

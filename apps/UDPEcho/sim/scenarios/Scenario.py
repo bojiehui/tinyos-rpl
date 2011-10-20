@@ -6,7 +6,6 @@ import random
 from sim.config import *
 
 class Scenario():
-#    def __init__(self, t, ei, si):
     def __init__(self, t, si):
         """
         """
@@ -36,7 +35,6 @@ class Scenario():
                   0 - gain)# negative gain
     
     def calc_gain(self, id, id2):
-        #print "Distance between node",id,"and","node",id2,"is", self.calc_distance(id, id2)
     
         return self.pl0 + self.gammaX10 * math.log(self.calc_distance(id, id2), 10)
 
@@ -53,7 +51,6 @@ class Scenario():
                 continue
 
             if (self.calc_distance(id, id2) <= cutoff_distance):
-               # print "node",id,"and node",id2,"are neighbors"
                 neigh += 1
 
         return neigh
@@ -80,10 +77,6 @@ class Scenario():
                 id, boottime
             n = self.t.getNode(id)
 
-            # set the boottime
-#            if id == self.ei.defines["INJECT_NODE"]:
-#                n.bootAtTime(0)
-#            elif id == BASESTATION_ID:
             if id == BASESTATION_ID:
                 n.bootAtTime(0) #BASESTATION
             else:
@@ -114,11 +107,3 @@ class Scenario():
             neighbors_min [id] = self.calc_neighbors(id, MIN_DISTANCE)
             neighbors_mean[id] = self.calc_neighbors(id, MEAN_DISTANCE)
             neighbors_max [id] = self.calc_neighbors(id, MAX_DISTANCE)
-
-      #  print "Neighbors(", MIN_DISTANCE,  "):", neighbors_min
-      #  print "Neighbors(", MEAN_DISTANCE, "):", neighbors_mean
-      #  print "Neighbors(", MAX_DISTANCE,  "):", neighbors_max
-
-#        np.save(self.filenamebase+"_neighbors_min.npy", neighbors_min)
-#        np.save(self.filenamebase+"_neighbors_mean.npy", neighbors_mean)
-#        np.save(self.filenamebase+"_neighbors_max.npy", neighbors_max)

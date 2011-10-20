@@ -18,10 +18,7 @@ class LineScenario(Scenario):
             if id == id2:
                 # do not connect with the same node
                 continue
-           # if abs(id - id2) == 1:
-                #    # only connect direct neighbor, with realistic
-            #    # propagation, though
-            #    self.connect_neighbor(id, id2) 
+    
             self.connect_neighbor(id, id2)
 
     def setup_radio(self):
@@ -33,8 +30,6 @@ class LineScenario(Scenario):
                 y = 0
 		z = 0
             else:
-                #x = (((id-2)/self.size)+1)*self.distance
-                #y = (((id-2)%self.size)+1)*self.distance
                 x = (id-1)*self.distance
                 y = 0
                 z = 0
