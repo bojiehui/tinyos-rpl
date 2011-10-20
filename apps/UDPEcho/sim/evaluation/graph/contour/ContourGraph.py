@@ -9,6 +9,7 @@ import matplotlib.cm as cm
 import matplotlib.colors as col
 from matplotlib.mlab import griddata
 from matplotlib.text import Text
+from matplotlib.figure import SubplotParams
 
 from sim.utils.helper import *
 from sim.scenarios.ScenarioInformation import *
@@ -73,7 +74,7 @@ class ContourGraph:
                     mean[i] = 2048
                 else:
                     new[i] = mean[i]
-
+        
         for i in range(1, si.nodes+1):
             (x, y, z) = id2xyz_dict[i]
             if si.nodes >= 100:
@@ -93,7 +94,17 @@ class ContourGraph:
                      bbox=dict(facecolor='k'))
                 )
 
-        fig = plt.figure(figsize=(10, 8))
+        if SCENARIO == 'GridScenario':
+            fig = plt.figure(figsize=(10, 8))
+           #c fig.subplots_adjust(left=0.01)
+                             
+                             
+
+        if SCENARIO == 'LineScenario':
+            fig = plt.figure(figsize=(10, 5))
+                             #subplotpars = SubplotParams(left = 0.06))
+                                                      
+            
         ax = fig.add_subplot(111)
 
         for p in packs:
@@ -117,7 +128,7 @@ class ContourGraph:
 
         #print ">>>>x", xarr
         #print ">>>>y", yarr
-        print ">>>>meanrtt",mean
+        #print ">>>>meanrtt",mean
         if SCENARIO == 'LineScenario':
             xi = np.linspace(0, max(xarr),10)
             yi = np.linspace(0, max(yarr),10)
@@ -130,7 +141,9 @@ class ContourGraph:
         CS = plt.contourf(xi, yi, zi, levels,
                     cmap = my_cm, norm = my_norm,
                           extend='max')
-        CS.set_clim(CS.cvalues[0], CS.cvalues[-2])
+       # CS.set_clim(CS.cvalues[0], CS.cvalues[-2])
+        #if si.nodes >= 16:
+        CS.set_clim(CS.cvalues[0], 250)
 
         plt.colorbar(CS)
 
@@ -139,7 +152,7 @@ class ContourGraph:
         except:
             plt.grid()
 
-        text = "#Nodes: " +str(si.nodes) + ", " + \
+        text = "No. of Nodes: " +str(si.nodes) + ", " + \
             "Inter node distance: " + str(si.distance) + "m"
 
         title = 'Mean RTT [ms] \n(' + text + ')'
@@ -150,23 +163,19 @@ class ContourGraph:
             max_xy = max(xarr)
         else:
             max_xy = max(yarr)
-        
-        if si.distance >= 50:
-                lim_delta = 10
-        else:
-                lim_delta = 5
-
+                
         if SCENARIO == 'GridScenario':
-           
-            plt.xlim(-lim_delta, max_xy+lim_delta)
-            plt.ylim(-lim_delta, max_xy+lim_delta)
+            lim_delta = (math.sqrt(si.nodes)-1)*si.distance*0.1
+            plt.xlim((-lim_delta, max_xy+lim_delta))
+            plt.ylim((-lim_delta, max_xy+lim_delta))
+            plt.xlabel("x [m]")
+            plt.ylabel("y [m]")
 
-        if SCENARIO == 'LineScenario':    
-
-            plt.xlim(-lim_delta, max_xy+lim_delta)
-            plt.ylim(-lim_delta, lim_delta)
-
-        plt.xlabel("x [m]")
-        plt.ylabel("y [m]")
+        if SCENARIO == 'LineScenario':
+            lim_delta = (si.nodes-1)*si.distance*0.1
+            plt.xlim((-lim_delta, max_xy+lim_delta))
+            plt.ylim((-5, 5))
+            plt.xlabel("x [m]")
+            plt.ylabel("y")
 
         plt.savefig(filenamebase+"_contour.pdf")

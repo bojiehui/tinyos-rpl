@@ -17,15 +17,12 @@ from mpl_toolkits.mplot3d.art3d import Line3D
 
 from sim.utils.helper import *
 from sim.scenarios.ScenarioInformation import *
-#from sim.scenarios.ExecutableInformation import *
-
 
 class TopologyGraph_3D:
     def __init__(self):
         pass
        
     def execute(self,
-               # ei,                         
                  si):
 
         filenamebase = si.createfilenamebase()
@@ -149,3 +146,6 @@ class TopologyGraph_3D:
                     fancybox = 'True')
 			
         plt.savefig(filenamebase+"_topology.pdf")
+
+if __name__ =="__main__":
+    sr = SimulationRun()

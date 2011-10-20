@@ -22,7 +22,6 @@ class TopologyGraph:
         pass
 
     def execute(self,
-               # ei,
                 si):
   
         filenamebase = si.createfilenamebase()
@@ -34,7 +33,6 @@ class TopologyGraph:
         print "filenamebase\t\t", filenamebase
         print "="*40
 
-        # consist = np.zeros(si.nodes+1)
         xarr = np.zeros(si.nodes+1)
         yarr = np.zeros(si.nodes+1)
 
@@ -95,12 +93,18 @@ class TopologyGraph:
                      alpha=1,
                      bbox=dict(facecolor='k'))
                  )
-
-        fig = plt.figure(figsize=(13, 10),
-                         subplotpars = SubplotParams(left = 0.05,
-                                                     bottom = 0.05,
-                                                     top = 0.95,
-                                                     right = 0.75))
+        if SCENARIO == 'LineScenario':
+            fig = plt.figure(figsize=(13, 5),
+                             subplotpars = SubplotParams(left = 0.06,
+                                                         bottom = 0.09,
+                                                         top = 0.90,
+                                                         right = 0.78))
+        if SCENARIO == 'GridScenario':
+            fig = plt.figure(figsize=(13, 10),
+                             subplotpars = SubplotParams(left = 0.06,
+                                                         bottom = 0.09,
+                                                         top = 0.90,
+                                                         right = 0.78))
 
         ax = fig.add_subplot(111)
 
@@ -108,40 +112,30 @@ class TopologyGraph:
            ax.add_artist(p)
            p.set_clip_box(ax.bbox)
 
-        text = "#Nodes: " + str(si.nodes) + ", " + \
-            "Size: " + str(si.distance) 
-            #+ ", " + \
-            #"K: " + str(ei.defines["DISTRIBUTION_TRICKLE_K"])
+        text = "No. of Nodes: " + str(si.nodes) + ", " + \
+            "Inter-node Distance: " + str(si.distance) + "m" 
 
         plt.title('Topology\n(' + text +')')
-
-        #plt.yticks(range(0, si.sqr_nodes+1))
-        #plt.xticks(range(0, si.si.sqr_nodes+1))
 
         if max(xarr) > max(yarr):
             max_xy = max(xarr)
         else:
             max_xy = max(yarr)
-        print max_xy
-
-        if DISTANCE_LIST >= 50:
-                lim_delta = 10
-        else:
-                lim_delta = 5
 
         if SCENARIO == 'GridScenario':
-           
+            lim_delta = (math.sqrt(si.nodes)-1)*si.distance*0.1
             plt.xlim(-lim_delta, max_xy+lim_delta)
             plt.ylim(-lim_delta, max_xy+lim_delta)
-
+            plt.ylabel("y [m]")
         if SCENARIO == 'LineScenario':
             
-
+            lim_delta = (si.nodes-1)*si.distance*0.1
             plt.xlim(-lim_delta, max_xy+lim_delta)
-            plt.ylim(-lim_delta, max(yarr)+lim_delta)
-            
+            plt.ylim(-1, max(yarr)+1)
+            plt.ylabel("y")
+    
         plt.xlabel("x [m]")
-        plt.ylabel("y [m]")
+       
           
         prr_gt_0   = Line2D([0, 1],
                             [0, 1],

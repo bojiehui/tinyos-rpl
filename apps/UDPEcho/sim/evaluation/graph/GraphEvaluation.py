@@ -1,13 +1,13 @@
 import gc
 import logging
 
-#from sim.evaluation.graph.packet.PacketGraph import *
 from sim.evaluation.graph.sn.SN import *
 from sim.evaluation.graph.contour.ContourGraph import *
 from sim.evaluation.graph.contour.ContourGraphSentICMP import *
 from sim.evaluation.graph.contour.ContourGraphPacketLoss import *
 from sim.evaluation.graph.hist.HistGraph import *
 from sim.evaluation.graph.topology.TopologyGraph import *
+from sim.evaluation.graph.topology.TopologyGraphBare import *
 from sim.evaluation.graph.topology.TopologyGraph_3D import *
 
 from sim.utils.helper import *
@@ -21,18 +21,12 @@ class GraphEvaluation:
         logger.info(">"*10 + " New graph evaluation" + "<"*10)
 
     def execute(self,
-            #    executable_info,
                 scenario_info):
 
         logger.info("="*40)
         logger.info("Executing GraphEvaluation:" + str(GRAPH_EVAL_LIST))
         logger.info("="*40)
 
-        # TrickleGraph shows it better
-        # pg = PacketGraph()
-        # pg.execute(executable_info, scenario_info)
-
-        #
         if GRAPH_EVAL_LIST.count("SN") > 0:
             sn = SN()
             sn.execute(scenario_info)	
@@ -43,7 +37,6 @@ class GraphEvaluation:
 
         if GRAPH_EVAL_LIST.count("ContourGraph") > 0:
             cg = ContourGraph()
-            #cg.execute(executable_info, scenario_info)
             cg.execute(scenario_info)	
             del cg
             gc.collect()
@@ -52,14 +45,12 @@ class GraphEvaluation:
 
         if GRAPH_EVAL_LIST.count("ContourGraphSentICMP") > 0:
             cgsp = ContourGraphSentICMP()
-            #cgsp.execute(executable_info, scenario_info)
             cgsp.execute(scenario_info)	
             del cgsp
             gc.collect()
 
         if GRAPH_EVAL_LIST.count("ContourGraphPacketLoss") > 0:
             cgpl = ContourGraphPacketLoss()
-            #cgsp.execute(executable_info, scenario_info)
             cgpl.execute(scenario_info)	
             del cgpl
             gc.collect()
@@ -68,7 +59,6 @@ class GraphEvaluation:
 
         if GRAPH_EVAL_LIST.count("HistGraph") > 0:
             hg = HistGraph()
-          #  hg.execute(executable_info, scenario_info)
             hg.execute(scenario_info)	
             del hg
             gc.collect()
@@ -80,7 +70,6 @@ class GraphEvaluation:
                 tog = TopologyGraph_3D()
             else:
                 tog = TopologyGraph()
-            #tog.execute(executable_info, scenario_info)
             tog.execute(scenario_info)	
             del tog
             gc.collect()

@@ -53,9 +53,11 @@ class MonteCarloContourGraph:
                 total_meanrtt[i] += meanrtt_run[i]
 
         total_meanrtt = total_meanrtt / iterations
-        
-        # do for last run, topology should not change over runs
-        # (ensured by config)
+    
+        of = open(si.create_montecarlo_filenamebase()+"_packet.txt", "aw")
+        print >> of, "Mean RTT"
+        print >> of, total_meanrtt
+    
         print "Reading id2xyz mapping from " + \
             (monte_si.createfilenamebase()+"_id2xyz.pickle")
         ifile = open(monte_si.createfilenamebase()+"_id2xyz.pickle", "r")
@@ -74,7 +76,7 @@ class MonteCarloContourGraph:
                 xarr[j] = xarr[index]
                 yarr[j] = 1
                 total_meanrtt[j] = total_meanrtt[index]
-            print "total_meanrtt",total_meanrtt
+            
             for i in range (1,2*(si.nodes)+1):
                 if math.isnan(total_meanrtt[i]):
                     total_meanrtt[i] = 2048
@@ -87,7 +89,7 @@ class MonteCarloContourGraph:
                 else:
                     new[i] = total_meanrtt[i]
             
-         
+        #print "total_meanrtt",total_meanrtt
         packs = []
         for i in range(1, si.nodes+1):
             (x, y, z) = id2xyz_dict[i]
@@ -108,9 +110,14 @@ class MonteCarloContourGraph:
                      bbox=dict(facecolor='k'))
                 )
 
-        fig = plt.figure(figsize=(10, 8))
-        ax = fig.add_subplot(111)
+        if SCENARIO == 'GridScenario':
+            fig = plt.figure(figsize=(10, 8))
 
+        if SCENARIO == 'LineScenario':
+            fig = plt.figure(figsize=(10, 5))
+
+        ax = fig.add_subplot(111)
+   
         for p in packs:
             ax.add_artist(p)
             p.set_clip_box(ax.bbox)
@@ -129,9 +136,9 @@ class MonteCarloContourGraph:
                                 HIGH_LEVEL,
                                 clip=False)
 
-        print ">>>>x", xarr
-        print ">>>>y", yarr
-        print ">>>>meanrtt", total_meanrtt
+        #print ">>>>x", xarr
+        #print ">>>>y", yarr
+        #print ">>>>meanrtt", total_meanrtt
         if SCENARIO == 'LineScenario':
             xi = np.linspace(0, max(xarr), 10)
             yi = np.linspace(0, max(yarr), 10)
@@ -143,7 +150,7 @@ class MonteCarloContourGraph:
         CS = plt.contourf(xi, yi, zi, levels,
                           cmap = my_cm, norm = my_norm,
                           extend='max')
-        CS.set_clim(CS.cvalues[0], CS.cvalues[-2])
+        CS.set_clim(CS.cvalues[0], 250)
 
         plt.colorbar(CS)
 
@@ -152,9 +159,9 @@ class MonteCarloContourGraph:
         except:
             plt.grid()
 
-        text = "#Nodes: " + str(si.nodes) + ", " + \
-            "Inter node distance: " + str(si.distance) + "m," +\
-            " #Runs: " + str(iterations)
+        text = "No. of Nodes: " + str(si.nodes) + ", " + \
+            "Inter-node Distance: " + str(si.distance) + "m, " +\
+            "No. of Runs: " + str(iterations)
         title = 'Mean RTT [ms]\n(' + text + ')'
 
         plt.title(title)
@@ -164,22 +171,19 @@ class MonteCarloContourGraph:
         else:
             max_xy = max(yarr)
 
-        if si.distance >= 50:
-            lim_delta = 10
-        else:
-            lim_delta = 5
-    
         if SCENARIO == 'GridScenario':
-           
-            plt.xlim(-lim_delta, max_xy+lim_delta)
-            plt.ylim(-lim_delta, max_xy+lim_delta)
+            lim_delta = (math.sqrt(si.nodes)-1)*si.distance*0.1
+            plt.xlim((-lim_delta, max_xy+lim_delta))
+            plt.ylim((-lim_delta, max_xy+lim_delta))
+            plt.xlabel("x [m]")
+            plt.ylabel("y [m]")
 
-        if SCENARIO == 'LineScenario':    
-
-            plt.xlim(-lim_delta, max_xy+lim_delta)
-            plt.ylim(-lim_delta, lim_delta)
-
-        plt.xlabel("x [m]")
-        plt.ylabel("y [m]")
-        print si.create_montecarlo_filenamebase()
+        if SCENARIO == 'LineScenario':
+            lim_delta = (si.nodes-1)*si.distance*0.1 
+            plt.xlim((-lim_delta, max_xy+lim_delta))
+            plt.ylim((-5, 5))
+            plt.xlabel("x [m]")
+            plt.ylabel("y")
+    
         plt.savefig(si.create_montecarlo_filenamebase()+"_montecarlo_contour.pdf")
+
