@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright (c) 2011 Johns Hopkins University. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -53,7 +53,7 @@ implementation{
 
   //#define divideRank 10
   uint32_t parentChanges = 0;
-  uint16_t desiredParent = MAX_PARENT;
+  uint16_t desiredParent = MAX_PARENT-1;
   uint16_t nodeEtx = divideRank;
   bool newParent = FALSE;
   uint16_t min_hop_rank_inc = 1;
@@ -99,17 +99,18 @@ implementation{
     parent_t* parentNode = call ParentTable.get(desiredParent);
 
     if(desiredParent == MAX_PARENT){
+      dbg("OF0","OF0: desiredParent == MAX_PARENT,nodeRank set to INFINITE_RANK\n");
       nodeRank = INFINITE_RANK;
       return FALSE;
     }
 
     prevEtx = nodeEtx;
     prevRank = nodeRank;
-
-    //printf("OF0 PARENT rank %d \n", parentSet[desiredParent].rank);
+    dbg("OF0","OF0: previous nodeEtx = %d, previous nodeRank = %d \n", prevEtx, prevRank);
     nodeEtx = parentNode->etx_hop;
     nodeRank = parentNode->rank + min_hop_rank_inc;
 
+    dbg("OF0","OF0: parentNode rank = %d, nodeEtx = %d, nodeRank = %d \n", parentNode->rank, nodeEtx, nodeRank);
     if(nodeRank < min_hop_rank_inc)
       nodeRank = INFINITE_RANK;
 
@@ -129,16 +130,25 @@ implementation{
     uint16_t minDesired;
     parent_t* parentNode, *previousParent;
 
+    parent_t* print_parentNode;
+    int i;
+
+    for (i=0; i< 9; i++){
+      print_parentNode = call ParentTable.get(i);
+      dbg("OF0","OF0: parent[%i]: %u, valid? %i, etx_hop = %d, etx = %d, rank = %d\n",  i, (uint8_t)htons(print_parentNode->parentIP.s6_addr16[7]),print_parentNode->valid, print_parentNode->etx_hop, print_parentNode->etx, print_parentNode->rank);
+    }
+
     parentNode = call ParentTable.get(min);
 
     while(!parentNode->valid && min < MAX_PARENT && parentNode->rank != INFINITE_RANK){
       min++;
       parentNode = call ParentTable.get(min);
     }
-
+    
     minDesired = parentNode->etx_hop + parentNode->rank*divideRank;
-
+   
     if (min == MAX_PARENT){ 
+      dbg("OF0","OF0: call Reset Rank, inconsistency, delete Route\n");
       call RPLOF.resetRank();
       call RPLRoute.inconsistency();
       call ForwardingTable.delRoute(route_key);
@@ -161,16 +171,20 @@ implementation{
     for (indexset = min + 1; indexset < MAX_PARENT; indexset++) {
 
       parentNode = call ParentTable.get(indexset);
+      
+      dbg("OF0","OF0: parentSet[%i]: %i, valid? %i, etx: %d, etx_hop: %d, rank:%d, minDesired: %u\n", 
+          indexset, (uint8_t)htons(parentNode->parentIP.s6_addr16[7]), parentNode->valid, parentNode->etx, parentNode->etx_hop, parentNode->rank, minDesired);
+      dbg("OF0","OF0: nodeRank = %d\n",nodeRank);
 
       //if(parentNode->valid)
-	//printf("Compare %d: %d %d with %d %d\n", htons(parentNode->parentIP.s6_addr16[7]), parentNode->etx_hop, parentNode->rank, minDesired, indexset);
+      //printf("Compare %d: %d %d with %d %d\n", htons(parentNode->parentIP.s6_addr16[7]), parentNode->etx_hop, parentNode->rank, minDesired, indexset);
 
       if(parentNode->valid && parentNode->etx_hop >= 0 &&
 	 (parentNode->etx_hop + parentNode->rank*divideRank < minDesired) && parentNode->rank < nodeRank && parentNode->rank != INFINITE_RANK){
 	count ++;
 	min = indexset;
 	minDesired = parentNode->etx_hop + parentNode->rank*divideRank;
-	//printf("Compare %d %d \n", minDesired, parentNode->etx_hop/divideRank + parentNode->rank);
+	dbg("OF0","RPLOF: Compare %d %d \n", minDesired, parentNode->etx_hop/divideRank + parentNode->rank);
 	if(min == desiredParent){
 	  //printf("current parent Checking...\n");
 	  minMetric = minDesired;
@@ -185,20 +199,24 @@ implementation{
     if(/*parentNode->rank > nodeRank || */parentNode->rank == INFINITE_RANK){
       //printf("SELECTED PARENT is FFFF %d\n", TOS_NODE_ID);
       desiredParent = MAX_PARENT;
+      dbg("OF0","OF0: ParentNode rank = infinite, delete Route\n");
       call ForwardingTable.delRoute(route_key);
       route_key = ROUTE_INVAL_KEY;
       return FAIL;
     }
 
     previousParent = call ParentTable.get(desiredParent);
-
+    dbg("OF0","OF0: desiredParent = %u, previousParent is %u\n", desiredParent,(uint8_t)htons(previousParent->parentIP.s6_addr16[7]));
+    dbg("OF0","OF0: minDesired: %d, deivideRank: %d, STABILITY_BOUND: %d, minMetric: %d\n", minDesired, divideRank, STABILITY_BOUND, minMetric);
+    dbg("OF0","OF0: previousParent is valid? %i\n", previousParent->valid);
     if(minDesired*divideRank + STABILITY_BOUND >= minMetric*divideRank && minMetric != 0 && previousParent->valid){
       // if the min measurement (minDesired) is not significantly better than the previous parent's (minMetric), stay with what we have...
-      //printf("SAFETYBOUND %d %d %d\n", minDesired*divideRank, STABILITY_BOUND, minMetric*divideRank);
+      printf("SAFETYBOUND %d %d %d\n", minDesired*divideRank, STABILITY_BOUND, minMetric*divideRank);
+      dbg("OF0","OF0: min = desiredParent %u = %u\n", min, desiredParent);
       min = desiredParent;
       minDesired = minMetric;
     }
-
+    dbg("OF0","OF0: desiredParent = min, %u = %u\n", desiredParent, min);
     minMetric = minDesired;
     desiredParent = min;
     parentNode = call ParentTable.get(desiredParent);
@@ -207,6 +225,7 @@ implementation{
     /* set the new default route */
     /* set one of the below of maybe set both? */
     //call ForwardingTable.addRoute((const uint8_t*)&DODAGID, 128, &parentNode->parentIP, RPL_IFACE);
+    dbg("OF0","OF0: addRoute\n");
     route_key = call ForwardingTable.addRoute(NULL, 0, &parentNode->parentIP, RPL_IFACE); // will this give me the default path?
 
     if(prevParent != parentNode->parentIP.s6_addr16[7]){
