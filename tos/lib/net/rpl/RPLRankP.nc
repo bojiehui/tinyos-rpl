@@ -26,8 +26,7 @@
  * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
  * STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
- * OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+ * OF THE POSSIBILITY OF SUCH DAMAGE. */
 
 /**
  * RPLRankP.nc
@@ -128,7 +127,7 @@ implementation {
   bool m_running = FALSE;
   //uint8_t divideRank = 128;
   parent_t parentSet[MAX_PARENT];
-
+ 
   void resetValid();
   void getNewRank();
 
@@ -196,13 +195,14 @@ implementation {
   command uint16_t RPLRankInfo.getRank(struct in6_addr *node){ //done
     uint8_t indexset;
     struct in6_addr my_addr;
-
+    //   dbg("RPLRank","RPLRank: my_addr = ");
+    // printf_in6addr_dbg(&my_addr);
 #ifdef RPL_GLOBALADDR
     call IPAddress.getGlobalAddr(&my_addr);
 #else
     call IPAddress.getLLAddr(&my_addr);
 #endif
-
+    
     if(compare_ipv6(&my_addr, node)){
 
       if(ROOT){
@@ -214,6 +214,7 @@ implementation {
     indexset = getParent(node);
 
     if (indexset != MAX_PARENT){
+      dbg("RPLRank","RPLRank: parentSet[%u] = %u\n",indexset, parentSet[indexset].rank);
       return parentSet[indexset].rank;
     }
 
@@ -231,6 +232,8 @@ implementation {
   }
 
   bool exceedThreshold(uint8_t indexset, uint8_t ID) { //done
+    dbg("RPLRank","RPLRank: exceedThreshold %u %u\n",
+        parentSet[indexset].etx_hop, ETX_THRESHOLD);
     return parentSet[indexset].etx_hop > ETX_THRESHOLD;
   }
 
@@ -269,6 +272,7 @@ implementation {
 
   void resetValid(){    //done
     uint8_t indexset;
+    dbg("RPLRank","RPLRank: resetValid()\n");
     for (indexset = 0; indexset < MAX_PARENT; indexset++) {
       parentSet[indexset].valid = FALSE;
     }
@@ -280,6 +284,7 @@ implementation {
   command void RPLRankInfo.inconsistencyDetected(){ //done
     parentNum = 0;
     call RPLOF.resetRank();
+    dbg("RPLRank","RPLRank: inconsistencyDetected,nodeRank = Infinite, resetValid()\n");
     nodeRank = INFINITE_RANK;
     resetValid();
     //memcpy(&DODAGID, 0, 16);
@@ -300,11 +305,13 @@ implementation {
     // just find if there are any pre existing information on this node...
     uint8_t indexset;
     if (parentNum == 0) {
+      dbg("RPLRank","RPLRank: parentNum = 0\n");
       return MAX_PARENT;
     }
 
     for (indexset = 0; indexset < MAX_PARENT; indexset++) {
       if (compare_ipv6(&(parentSet[indexset].parentIP),node)) {
+        dbg("RPLRank","RPLRank: pre-existingParent index = %u\n", indexset);
 	return indexset;
       }
     }
@@ -319,12 +326,14 @@ implementation {
     uint8_t indexset;
     uint16_t tempEtx_hop;
 
+    dbg("RPLRank","RPLRank: insert parent.parentIP = %u\n", (uint8_t)htons(&parent.parentIP.s6_addr16[7]));
     indexset = getPreExistingParent(&parent.parentIP);
 
     //printf("Insert Node: %d \n", indexset);
 
     if(indexset != MAX_PARENT) // we have previous information
       {
+        dbg("RPLRank","RPLRank: i have previous information\n");
 	tempEtx_hop = parentSet[indexset].etx_hop;
 	parentSet[indexset] = parent;
 
@@ -336,14 +345,22 @@ implementation {
 	  tempEtx_hop = INIT_ETX;
 	}
 
+        dbg("RPLRank","RPLRank: before ParentSet[%i].etx_hop = %u\n",indexset, parentSet[indexset].etx_hop); 
 	parentSet[indexset].etx_hop = tempEtx_hop;
+        dbg("RPLRank","RPLRank: ParentSet[%i].etx_hop = %u\n",indexset, parentSet[indexset].etx_hop); 
 	parentNum++;
-	//printf("Parent Added %d \n",parentNum);
+	dbg("RPLRank","RPLRank: Parent Added, total # of parents = %d \n",parentNum);
 	return;
       }
+    else {
+      dbg("RPLRank","RPLRank: i don't have previous information. \n");
+    }
 
     for (indexset = 0; indexset < MAX_PARENT; indexset++) {
+      dbg("RPLRank","RPLRank: indexset %u, Max_parent = %u\n",indexset, MAX_PARENT);
+      // check the first empty entry in parentSet
       if (!parentSet[indexset].valid) {
+        dbg("RPLRank","RPLRank: # %u in parentSet is not valid, asigin this entry with parent %u\n",indexset,(uint8_t)htons(parent.parentIP.s6_addr16[7]));
 	parentSet[indexset] = parent;
 	parentNum++;
 	break;
@@ -353,19 +370,21 @@ implementation {
   }
 
   void evictParent(uint8_t indexset) {//done
+    dbg("RPLRank","RPLRank: evictParent %u\n", indexset);
+
     parentSet[indexset].valid = FALSE;
     parentNum--;
-    printf("Evict parent %d \n", parentNum);
+    printf("Evict parent indexset = %u \n", indexset);
     if (parentNum == 0) {
       //should do something
-      printf("RPLRank: paren Number = 0\n");
+      dbg("RPLRank","RPLRank: paren Number = 0\n");
       call RouteInfo.resetTrickle();
     }
   }
 
   task void newParentSearch(){
     // only called when evictAll just cleared out my current desired parent
-    printf("newParentSearch->recomputeRoutes\n");
+    dbg("RPLRank","evictAll: recomputeRoutes 0\n");   
     call RPLOF.recomputeRoutes();
     getNewRank();
   }
@@ -373,14 +392,17 @@ implementation {
   /* check and remove parents on rank change */
   void evictAll() {//done
     uint8_t indexset, myParent;
-
+    dbg("RPLRank","RPLRank: evitAll()\n");
     myParent = getParent(call RPLOF.getParent());
+    dbg("RPLRank","RPLRank: myParent index = %u\n",myParent);
 
     for (indexset = 0; indexset < MAX_PARENT; indexset++) {
       if (parentSet[indexset].valid && parentSet[indexset].rank >= nodeRank) {
+        dbg("RPLRank","RPLRank: evict parentSet[%u]: parent node: %u\n",
+            indexset, (uint8_t)htons(parentSet[indexset].parentIP.s6_addr[17]));
 	parentSet[indexset].valid = FALSE;
 	parentNum--;
-	printf("Evict all %d %d %d %d\n", parentNum, parentSet[indexset].rank, nodeRank, htons(parentSet[indexset].parentIP.s6_addr16[7]));
+        printf("Evict all: parentNum: %d\n", parentNum);
 	if(indexset == myParent){
 	  // i just cleared out my own parent...
 	  post newParentSearch();
@@ -558,8 +580,9 @@ printf_dbg("RankP forwarding approve 1 \n");
     uint16_t etx_now = info->link_transmissions;
 
     //printf("linkResult: ");
-    //printf_in6addr(node);
-    //printf(" %d [%i] %d \n", TOS_NODE_ID, info->link_transmissions, nodeRank);
+    //dbg("RPLRank","RPLRank:linkResult: ");
+    printf_in6addr_dbg(node);
+    dbg("RPLRank","RPLRank: linkResult %d [%i] %d \n", TOS_NODE_ID, info->link_transmissions, nodeRank);
 
     myParent = getParent(call RPLOF.getParent());
 
@@ -570,17 +593,23 @@ printf_dbg("RankP forwarding approve 1 \n");
     for (indexset = 0; indexset < MAX_PARENT; indexset++) {
       if (parentSet[indexset].valid && 
           compare_ipv6(&(parentSet[indexset].parentIP), node)){
+        dbg("RPLRank","RPLRank: first valid parent index = %u\n",indexset);
 	break;
       }
     }
 
-    if (indexset != MAX_PARENT) { // not empty...
-      parentSet[indexset].etx_hop = (parentSet[indexset].etx_hop * 6 + (etx_now * divideRank) * 4) / 10;
+    if (indexset != MAX_PARENT) { // not empty...,
+      dbg("RPLRank","RPLRank: calculate etx_hop: [parentSet[%i].etx_hop(%u)*6 + etx_now(%u)*divideRank(%i)*4]/10\n", indexset, parentSet[indexset].etx_hop, etx_now, divideRank);
+      parentSet[indexset].etx_hop = (parentSet[indexset].etx_hop * 6 + (etx_now * divideRank) * 4) / 10; // 60% old, 40% new
+      dbg("RPLRank","RPLRank: parentSet[%i]= %u\n", indexset, (uint8_t)htons(parentSet[indexset].parentIP.s6_addr16[7]));
+      dbg("RPLRank","RPLRank: new parent etx_hop = %u\n", parentSet[indexset].etx_hop);
+      dbg("RPLRank","RPLRank: exceedThreshold? %i, etx_now = %u\n",exceedThreshold(indexset, METRICID),etx_now);
+      dbg("RPLRank","RPLRank: BLIP_L2_RETRIES= %u\n",BLIP_L2_RETRIES);
 
       if (exceedThreshold(indexset, METRICID) || etx_now == BLIP_L2_RETRIES) {
 	evictParent(indexset);
 	if(indexset == myParent && parentNum > 0){
-          printf("recomputeRoutes1\n");
+          dbg("RPLRank","RPLRank: RecomputeRoutes1\n");
 	  call RPLOF.recomputeRoutes();}
       }
 
@@ -589,6 +618,7 @@ printf_dbg("RankP forwarding approve 1 \n");
 	call RPLOF.recomputeRoutes();
       }
       */
+      dbg("RPLRank","RPLRank: getNewRank 1\n");
       getNewRank();
 
       //printf(">> P_ETX UPDATE %d %d %d %d %d %d\n", indexset, parentSet[indexset].etx_hop, etx_now, ntohs(parentSet[indexset].parentIP.s6_addr16[7]), nodeRank, parentNum);
@@ -606,37 +636,44 @@ printf_dbg("RankP forwarding approve 1 \n");
   void getNewRank(){
     uint16_t prevRank = nodeRank;//, myParent;
     bool newParent = FALSE;
-    struct in6_addr ADDR_MY_IP;
-    call IPAddress.getGlobalAddr(&ADDR_MY_IP);
-    printf("getNewRank: 1 %i  \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
+    //    struct in6_addr ADDR_MY_IP;
+    printf("getNewRank: 1 prev node rank: %u  \n",prevRank);
+    // call IPAddress.getGlobalAddr(&ADDR_MY_IP);
+    //  printf("getNewRank: 1 new rank: %i  \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
     newParent = call RPLOF.recalcualateRank();//hier gehts dahin
-    printf("getNewRank: 2 %i  \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
+    printf("getNewRank: 2 new Parent?: %i  \n",newParent);
+    // printf("getNewRank: 2 new rank: %i  \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
     nodeRank = call RPLOF.getRank();
-    printf("getNewRank: 3 %i  \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
-
-    printf("GOT new rank %d %d %d\n", TOS_NODE_ID, call RPLOF.getRank(), newParent);
+    printf("getNewRank: 3 new node rank: %u  \n",nodeRank);
+    //printf("getNewRank: 3 new rank: %i  \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 
     if(newParent){
+      dbg("RPLRank","RPLRank: newParent\n");
       minRank = nodeRank;
       return;
     }
 
-    if(nodeRank < minRank){
+    if(nodeRank <= minRank){
+      dbg("RPLRank","RPLRank: nodeRank <= minRank\n");
       minRank = nodeRank;
       return;
     }
 
     // did the node rank get worse than the limit?
+    dbg("RPLRank","RPLRank: nodeRank = %d, prevRank = %d\n",nodeRank,prevRank);
+    dbg("RPLRank","RPLRank: minRank = %d, MAX_RANK_INCREASE = %d\n",minRank,MAX_RANK_INCREASE);
     if (nodeRank > prevRank && 
-        nodeRank - minRank > MAX_RANK_INCREASE && MAX_RANK_INCREASE != 0) {
+        nodeRank - minRank > MAX_RANK_INCREASE &&
+        MAX_RANK_INCREASE != 0) {
       // this is inconsistency!
       //call RPLOF.recomputeRoutes();
-      printf("Inconsistent %d\n", TOS_NODE_ID);
+      printf("Inconsistent %d, nodeRank = infinite\n", TOS_NODE_ID);
       nodeRank = INFINITE_RANK;
       minRank = INFINITE_RANK;
       call RouteInfo.inconsistency();
       return;
     }
+    
     evictAll();
   }
 
@@ -657,21 +694,23 @@ printf_dbg("RankP forwarding approve 1 \n");
     struct dio_prefix_t* dio_prefix;
     uint8_t* newPoint;
     uint16_t trackLength = ntohs(iph->ip6_plen);
-struct in6_addr ADDR_MY_IP;
-call IPAddress.getGlobalAddr(&ADDR_MY_IP);
+    struct in6_addr ADDR_MY_IP;
+    call IPAddress.getGlobalAddr(&ADDR_MY_IP);
+    printf("parseDIO is called!!! node rank = %u\n",nodeRank);
     /* I am root */
- if (nodeRank == ROOT_RANK){
-   printf("NodeRank = Root_Rank \n");
- return;
-} 
-/* printf_dbg("Wo isser denn %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
+    if (nodeRank == ROOT_RANK){
+      printf("NodeRank = Root_Rank \n");
+      return;
+    } 
+
     /* new iteration */
     if (dio->version != VERSION && compare_ipv6(&dio->dodagID, &DODAGID)) {
-      printf("new iteration!\n");
+      // printf("new iteration!\n");
       parentNum = 0;
       VERSION = dio->version;
+      dbg("RPLRank","RPLRank: new iteration, call resetRank, resetValid\n");
       call RPLOF.resetRank();
-      printf("Status Rank: %i nach Reset \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
+      //printf("Status Rank: %i nach Reset noderank =infinite\n",call RPLRankInfo.getRank(&ADDR_MY_IP));
       nodeRank = INFINITE_RANK;
       minRank = INFINITE_RANK;
       resetValid();
@@ -679,7 +718,7 @@ call IPAddress.getGlobalAddr(&ADDR_MY_IP);
 /* printf_dbg("Wo isser denn 2 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
     //if (dio->dagRank >= nodeRank && nodeRank != INFINITE_RANK) return;
 
-    printf("source node %d, DIO in Rank:%d, nodeRank:%u parentNum:%d\n", ntohs(iph->ip6_src.s6_addr16[7]), dio->dagRank, nodeRank, parentNum);
+    printf("source node %d, DIO in Rank:%u, nodeRank:%u parentNum:%d\n", ntohs(iph->ip6_src.s6_addr16[7]), dio->dagRank, nodeRank, parentNum);
     //printf_in6addr(&iph->ip6_src);
     //printf("\n");
     
@@ -699,12 +738,14 @@ call IPAddress.getGlobalAddr(&ADDR_MY_IP);
 	return;
       } else if (Prf > tempPrf) { //move
         //printf("MOVE TO NEW DODAG \n");
+        dbg("MRHOF","NEW DODAG\n");
 	Prf = tempPrf;
 	memcpy_rpl((uint8_t*)&DODAGID, (uint8_t*)&rDODAGID, sizeof(struct in6_addr));
 	parentNum = 0;
 /* printf_dbg("Wo isser denn 5 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
 	VERSION = dio->version;
 	call RPLOF.resetRank();
+        dbg("RPLRank","RPLRank: nodeRank = Infinite, resetValid()\n");
 	nodeRank = INFINITE_RANK;
 	minRank = INFINITE_RANK;
 	//desiredParent = MAX_PARENT;
@@ -717,12 +758,15 @@ call IPAddress.getGlobalAddr(&ADDR_MY_IP);
 /* printf_dbg("Wo isser denn 6 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
     } else if (compare_ipv6(&DODAGID, &DODAG_MAX)) { //not belong to a DODAG yet
       //      printf("TOTALLY NEW DODAG \n");
+
+      dbg("MRHOF","TOTALLY NEW DODAG\n");
       Prf = tempPrf;
       memcpy_rpl((uint8_t*)&DODAGID, (uint8_t*)&rDODAGID, sizeof(struct in6_addr));
       parentNum = 0;
 /* printf_dbg("Wo isser denn 7 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
       VERSION = dio->version;
       call RPLOF.resetRank();
+      dbg("RPLRank","RPLRank: totally new dodag, nodeRank = Infinite, resetValid\n");
       nodeRank = INFINITE_RANK;
       minRank = INFINITE_RANK;
       //desiredParent = MAX_PARENT;
@@ -828,9 +872,9 @@ call IPAddress.getGlobalAddr(&ADDR_MY_IP);
       // either I dont know the metric object or I don't support the OF
       printf("support the metric? %d support the OF? %d parent number = %d\n",call RPLOF.objectSupported(METRICID), call RPLOF.OCP(OCP), parentNum);
       insertParent(tempParent);
-      printf("RPLRank:recompute Routes2\n");
       call RPLOF.recomputeRoutes();
       //getNewRank(); no need to compute routes when I am going to stay as a leaf!
+      dbg("RPLRank","RPLRank: recompute Route 2 nodeRank = Infinite\n");
       nodeRank = INFINITE_RANK;
       leafState = TRUE;
       return;
@@ -846,7 +890,7 @@ call IPAddress.getGlobalAddr(&ADDR_MY_IP);
 	if (parentNum != 0) {
 printf_dbg("Status Rank:9 %i vor Reset \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 	  //chooseDesired();
-          printf("RPLRank:RecomputeRoutes3\n");
+          dbg("RPLRank","RPLRank: RecomputeRoutes3\n");
 	  call RPLOF.recomputeRoutes(); // we do this to make sure that this parent is still the best and it is worth moving
 
 	  myParent = getParent(call RPLOF.getParent());
@@ -857,22 +901,23 @@ printf_dbg("Status Rank:9 %i vor Reset \n",call RPLRankInfo.getRank(&ADDR_MY_IP)
 	    memcpy_rpl((uint8_t*)&DODAGID, (uint8_t*)&rDODAGID, sizeof(struct in6_addr));
 	    parentNum = 0;
 	    VERSION = dio->version;
+            dbg("RPLRank","RPLRank: New DODAG is not my desired parent node, resetValid\n");
 	    resetValid();
 	    insertParent(tempParent);
-            printf("RPLRank:RecomputeRoutes4\n");
+            dbg("RPLRank","RPLRank: RecomputeRoutes4\n");
 	    call RPLOF.recomputeRoutes();
 printf_dbg("Status Rank:99 %i vor Reset \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 	    getNewRank();
 	  } else {
 	    // I have a better node in the current DODAG so I am not moving!
             printf_dbg("Status Rank:999 %i vor Reset \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
-            printf("RPLRank:RecomputeRoutes5\n");
+            dbg("RPLRank","RPLRank: RecomputeRoutes5\n");
 	    call RPLOF.recomputeRoutes();
 	    getNewRank();
 	    ignore = TRUE;
 	  }
 	} else {
-          printf("parentNum = 0\n");
+          dbg("MRHOF","parentNum = 0,resetValid\n");
 	  // not likely to happen but this is a new DODAG...
 	  Prf = tempPrf;
 	  memcpy_rpl((uint8_t*)&DODAGID, (uint8_t*)&rDODAGID, sizeof(struct in6_addr));
@@ -880,19 +925,20 @@ printf_dbg("Status Rank:99 %i vor Reset \n",call RPLRankInfo.getRank(&ADDR_MY_IP
 	  VERSION = dio->version;
 	  resetValid();
 	  insertParent(tempParent);
-          printf("RPLRank:RecomputeRoutes6\n");
+          dbg("RPLRank","RPLRank: RecomputeRoutes6\n");
 	  call RPLOF.recomputeRoutes();
 	  getNewRank();
 	}
 
       }else{
-        printf("old DODAG\n");
+        //printf("old DODAG\n");
+        dbg("RPLRank","RPLRank: old DODAG\n");
 	// this DIO is just from a parent that I know already, update and re-evaluate
         printf("known parent -- update\n");
         printf("RPLRank: parentNode = %u \n",  (uint8_t)htons(parentSet[parentIndex].parentIP.s6_addr16[7]));
 	parentSet[parentIndex].rank = pParentRank; //update rank
 	parentSet[parentIndex].etx = etx;
-        printf("RPLRank:RecomputeRoutes7\n");
+        dbg("RPLRank","RPLRank: RecomputeRoutes7\n");
 	call RPLOF.recomputeRoutes();
 	getNewRank();
 	ignore = TRUE;
@@ -927,10 +973,10 @@ printf_dbg("Status Rank:99 %i vor Reset \n",call RPLRankInfo.getRank(&ADDR_MY_IP
 	    memcpy_rpl((uint8_t*)&DODAGID, (uint8_t*)&rDODAGID, sizeof(struct in6_addr));
 	    parentNum = 0;
 	    VERSION = dio->version;
+            dbg("RPLRank","RPLRank: resetValid, recomputeRoutes9\n");
 	    resetValid();
 /* printf_dbg("Wo isser denn 23 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
 	    insertParent(tempParent);
-            printf("RPLRank:RecomputeRoutes9\n");
 	    call RPLOF.recomputeRoutes();
 	    getNewRank();
 	  } else {
@@ -939,7 +985,7 @@ printf_dbg("Status Rank:99 %i vor Reset \n",call RPLRankInfo.getRank(&ADDR_MY_IP
 /* printf_dbg("Wo isser denn 24 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP)); */
 	  }
 	} else {
-          printf("PRLRank:parentNum =0\n");
+          dbg("RPLRank","PRLRank: parentNum =0, resetValid()\n");
 	  // This is the first DODAG I am registering ... or the once before are all goners already
 	  //printf("First DODAG\n");
 	  Prf = tempPrf;
@@ -948,20 +994,21 @@ printf_dbg("Status Rank:99 %i vor Reset \n",call RPLRankInfo.getRank(&ADDR_MY_IP
 	  VERSION = dio->version;
 	  resetValid();
 	  insertParent(tempParent);
-          printf("Wo isser denn End 1 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
+          //printf("Wo isser denn End 1 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
+          dbg("RPLRank","RPLRank: recomputeRoutes 10\n");
 	  call RPLOF.recomputeRoutes();
-printf_dbg("Wo isser denn End 2 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
- getNewRank();//Hier geht auseinander node 2 und node 3
-printf_dbg("Wo isser denn End 3 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
+          //printf_dbg("Wo isser denn End 2 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
+          getNewRank();//Hier geht auseinander node 2 und node 3
+ //printf_dbg("Wo isser denn End 3 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 	}
       }else{
 	// its a new parent from the current DODAG .. so no need for DODAG configuarion just insert
-        printf("Same DODAG %d \n", parentNum);
+        dbg("RPLRank","RPLRank: Same DODAG %d \n", parentNum);
 	insertParent(tempParent);
-        printf("RPLRank:inserted tempParent,RecomputeRoutes\n");
-	call RPLOF.recomputeRoutes();
-	preRank = nodeRank;
-	getNewRank();
+        dbg("RPLRank","RPLRank: recomputeRoutes 11\n");
+        call RPLOF.recomputeRoutes(); 
+        preRank = nodeRank;
+        getNewRank();
       }
     }
   }
@@ -979,18 +1026,26 @@ printf_dbg("Wo isser denn End 3 %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
                          size_t len, struct ip6_metadata *meta){
     struct dio_base_t *dio;
     struct in6_addr ADDR_MY_IP;
+    int i;
     dio = (struct dio_base_t *) payload;
     call IPAddress.getGlobalAddr(&ADDR_MY_IP);
+    dbg("RPLRank","RPLRank:IP_DIO.recv: MY_IP = ");
     printf_in6addr_dbg(&ADDR_MY_IP);
 
     if (!m_running) return;
+
+    dbg("RPLRank","IP_DIO.recv: print receiving payload: ");    
+    for (i=0;i<sizeof(struct dio_base_t);i++){
+      dbg_clear("RPLRank","%x",((uint8_t*)payload)[i]);
+    }
+    dbg_clear("RPLRank","\n");
 
     if(nodeRank != ROOT_RANK && dio->dagRank != 0xFFFF)
       parseDIO(iph, dio);
 
     // evict parent if the node is advertizing 0xFFFF;
     if(dio->dagRank == 0xFFFF && getParent(&iph->ip6_src) != MAX_PARENT){
-      printf("Status vor DAG akzeptiert in RankP 0.2 Jetzt Rank: %i \n",
+      printf("DIO advertizing rank 0xFFFF, Jetzt Rank: %i \n",
                  call RPLRankInfo.getRank(&ADDR_MY_IP));
       evictParent(getParent(&iph->ip6_src));
     }
