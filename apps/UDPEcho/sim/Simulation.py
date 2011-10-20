@@ -17,7 +17,6 @@ import logging.config
 import time
 
 from sim.scenarios.ScenarioInformation import *
-from sim.scenarios.ExecutableInformation import *
 
 from sim.config import *
 

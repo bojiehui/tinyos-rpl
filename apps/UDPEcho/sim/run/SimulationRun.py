@@ -26,7 +26,6 @@ from sim.scenarios.DirectNeighborGridScenario import *
 from sim.scenarios.RandomScenario import *
 from sim.scenarios.LineScenario import *
 from sim.scenarios.DirectNeighborLineScenario import *
-from sim.scenarios.MoteLabConnectivityScenario import *
 from sim.scenarios.ContainerScenario import *
 
 logging.config.fileConfig(LOGFILENAME)
