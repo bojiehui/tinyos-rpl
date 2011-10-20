@@ -610,8 +610,10 @@ void SENDINFO_DECR(struct send_info *si) {
       state = S_STOPPED;
       goto done;
     }
-    
-    s_entry->info->link_transmissions += (call PacketLink.getRetries(msg));
+    dbg("Retry","Retry: Retries+1 = %u\n", (call PacketLink.getRetries(msg))+1);
+    s_entry->info->link_transmissions += (call PacketLink.getRetries(msg))+1;//bo: rfxlink gives no. of retries 
+    //s_entry->info->link_transmissions += (call PacketLink.getRetries(msg));// CC2420 gives no. of transmissions
+    dbg("Retry","Retry: link transmission = %u\n", s_entry->info->link_transmissions);
     signal IPLower.sendDone(s_entry->info);
 
     if (!call PacketLink.wasDelivered(msg)) {
@@ -622,6 +624,10 @@ void SENDINFO_DECR(struct send_info *si) {
 /*         dbg("Drops", "drops: sendDone: frag was not delivered\n"); */
       // need to check for broadcast frames
       // BLIP_STATS_INCR(stats.tx_drop);
+    }
+    else {
+            printf("sendDone: was delivered! (%i tries)\n",
+                                    call PacketLink.getRetries(msg));
     }
 
   done:
