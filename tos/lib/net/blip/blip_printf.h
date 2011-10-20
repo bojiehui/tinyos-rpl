@@ -51,7 +51,7 @@ void printf_in6addr(struct in6_addr *a) {
 #warning "TOSSIM printf"
 #define printf(X, args...) dbg("IPForwardingEngine", X,## args);
 #define printf_dbg(X, args...) dbg("Test", X,## args);
-#define printf_in6addr_dbg(X) {static char print_buf[64];inet_ntop6(X, print_buf, 64);dbg_clear("Test",print_buf);};
+#define printf_in6addr_dbg(X) {static char print_buf[64];inet_ntop6(X, print_buf, 64);dbg_clear("Test","IP_ADDR = %s\n",print_buf);};
 #define printf_in6addr_coap(X) {static char print_buf[64];inet_ntop6(X, print_buf, 64);dbg_clear("Coap",print_buf);};
 #define printfflush();
 #define printf_in6addr(X) {static char print_buf[64];inet_ntop6(X, print_buf, 64);dbg_clear("IPForwardingEngine",print_buf);};

@@ -197,7 +197,7 @@ implementation {
 
   sim_event_t receiveEvent;
   // This clear threshold comes from the CC2420 data sheet
-  double clearThreshold = -72.0;
+  double clearThreshold = -95.0; //Bo: was -72.0
   bool collision = FALSE;
   message_t* incoming = NULL;
   int incomingSource;
@@ -236,7 +236,8 @@ implementation {
     double X = SNR-beta2;
     double PSE = 0.5*erfc(beta1*X/sqrt(2));
     double prr_hat = pow(1-PSE, 23*2);
-    dbg("CpmModelC,SNR", "SNR is %lf, PRR is %lf\n", SNR, prr_hat);
+    dbg("CpmModelC,SNR", "prr estimation from snr: ");
+    dbg_clear("CpmModelC,SNR", "SNR is %lf, PRR is %lf\n", SNR, prr_hat);
     if (prr_hat > 1)
       prr_hat = 1.1;
     else if (prr_hat < 0)
@@ -249,11 +250,13 @@ implementation {
     double prr = prr_estimate_from_snr(SNR);
     double coin = RandomUniform();
     if ( (prr >= 0) && (prr <= 1) ) {
+      dbg("CpmModelC,SNR", "coin is %lf, PRR is %lf\n", coin, prr);
       if (coin < prr)
 	prr = 1.0;
       else
 	prr = 0.0;
     }
+    dbg("CpmModelC,SNR", " -> prr %lf\n", prr);
     return prr;
   }
 
@@ -263,29 +266,38 @@ implementation {
     noise = pow(10.0, noise / 10.0);
     while (list != NULL) {
       if (list != msg) {
+        dbg("CpmModelC","CpmModel: list != msg/n");
 	noise += pow(10.0, list->power / 10.0);
       }
       list = list->next;
     }
     noise = 10.0 * log(noise) / log(10.0);
+    dbg("CpmModelC,SNR", "SNR = (msg->power)%lf - (noise)%lf\n", msg->power, noise);
     return shouldReceive(msg->power - noise);
   }
   
   double packetNoise(receive_message_t* msg) {
-    double noise = noise_hash_generation();
+    double noise = noise_hash_generation();    
     receive_message_t* list = outstandingReceptionHead;
+    dbg("CpmModelC,SNR", "packetNoise1 = %lf\n", noise);
     noise = pow(10.0, noise / 10.0);
     while (list != NULL) {
       if (list != msg) {
+        dbg("CpmModelC,SNR", "list != msg\n");
 	noise += pow(10.0, list->power / 10.0);
+        dbg("CpmModelC,SNR", "list->power = %lf\n",list->power);
+        
       }
       list = list->next;
     }
     noise = 10.0 * log(noise) / log(10.0);
+    dbg("CpmModelC,SNR", "packetNoise2 = %lf\n", noise);
     return noise;
   }
 
   double checkPrr(receive_message_t* msg) {
+    dbg("CpmModelC,SNR", "checkPrr: return prr_estimation_from_snr");
+    dbg_clear("CpmModelC,SNR", "SNR = (msg->power)%lf / (packetNoise(msg))%lf \n", msg->power , packetNoise(msg));
     return prr_estimate_from_snr(msg->power / packetNoise(msg));
   }
   
@@ -299,6 +311,7 @@ implementation {
     receive_message_t* list = outstandingReceptionHead;
 
     dbg("CpmModelC", "Handling reception event @ %s.\n", sim_time_string());
+    dbg("CpmModelC", "mine->lost? %i\n", mine->lost);
     while (list != NULL) {
       if (list->next == mine) {
 	predecessor = list;
@@ -315,10 +328,12 @@ implementation {
       dbgerror("CpmModelC", "Incoming packet list structure is corrupted: entry is not the head and no entry points to it.\n");
     }
     dbg("CpmModelC,SNRLoss", "Packet from %i to %i\n", (int)mine->source, (int)sim_node());
+    dbg("CpmModelC,SNRLoss", "CpmModel: 1st mine->lost? %i\n", mine->lost);
     if (!checkReceive(mine)) {
       dbg("CpmModelC,SNRLoss", " - lost packet from %i as SNR was too low.\n", (int)mine->source);
       mine->lost = 1;
     }
+
     if (!mine->lost) {
       // Copy this receiver's packet signal strength to the metadata region
       // of the packet. Note that this packet is actually shared across all
@@ -326,13 +341,16 @@ implementation {
       tossim_metadata_t* meta = (tossim_metadata_t*)(&mine->msg->metadata);
       meta->strength = mine->strength;
       
-      dbg_clear("CpmModelC,SNRLoss", "  -signaling reception\n");
+      //dbg_clear("CpmModelC,SNRLoss", "  -signaling reception\n");
+      dbg("CpmModelC,SNRLoss", "  -signaling reception\n");
       signal Model.receive(mine->msg);
       if (mine->ack) {
-        dbg_clear("CpmModelC", " acknowledgment requested, ");
+        //dbg_clear("CpmModelC", " acknowledgment requested, ");
+        dbg("CpmModelC", " acknowledgment requested, ");
       }
       else {
         dbg_clear("CpmModelC", " no acknowledgment requested.\n");
+        dbg("CpmModelC", " no acknowledgment requested.\n");
       }
       // If we scheduled an ack, receiving = 0 when it completes
       if (mine->ack && signal Model.shouldAck(mine->msg)) {
@@ -360,7 +378,8 @@ implementation {
 	free_receive_message(mine);
       }
       receiving = 0;
-      dbg_clear("CpmModelC,SNRLoss", "  -packet was lost.\n");
+      //dbg_clear("CpmModelC,SNRLoss", "  -packet was lost.\n");
+      dbg("CpmModelC,SNRLoss", "  -packet was lost.\n");
     }
   }
    
@@ -388,7 +407,7 @@ implementation {
     // it in case I turn on and someone else starts sending me a weaker
     // packet. So I don't set receiving to 1, but I keep track of
     // the signal strength.
-
+    dbg("CpmModelC,SNRLoss", "SNR = (power)%i - (noiseStr)%i\n", (int)power, (int)noiseStr);
     if (!sim_mote_is_on(sim_node())) { 
       dbg("CpmModelC", "Lost packet from %i due to %i being off\n", source, sim_node());
       rcv->lost = 1;

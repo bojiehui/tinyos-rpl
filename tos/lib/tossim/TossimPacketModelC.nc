@@ -78,7 +78,9 @@ implementation {
   sim_event_t sendEvent;
   
   message_t receiveBuffer;
+
   
+  dbg("TossimPacketModelC", "TossimPacketModelC: Init.init() called\n");
   tossim_metadata_t* getMetadata(message_t* msg) {
     return (tossim_metadata_t*)(&msg->metadata);
   }
@@ -194,7 +196,7 @@ implementation {
     backoff %= (sim_csma_init_high() - sim_csma_init_low());
     backoff += sim_csma_init_low();
     backoff *= (sim_ticks_per_sec() / sim_csma_symbols_per_sec());
-    dbg("TossimPacketModelC", "Starting CMSA with %lli.\n", backoff);
+    dbg("TossimPacketModelC", "TossimPacketModel:Starting CMSA with %lli.\n", backoff);
     first_sample = sim_time() + backoff;
 
     sendEvent.mote = sim_node();
@@ -222,6 +224,7 @@ implementation {
       delay *= (sim_ticks_per_sec() / sim_csma_symbols_per_sec());
       evt->time += delay;
       transmitting = TRUE;
+      dbg("TossimPacketModelC", "TossimPacketModel: PACKET: SetPendingTransmission.\n");
       call GainRadioModel.setPendingTransmission();
       evt->handle = send_transmit;
       sim_queue_insert(evt);
@@ -241,7 +244,7 @@ implementation {
     else {
       message_t* rval = sending;
       sending = NULL;
-      dbg("TossimPacketModelC", "PACKET: Failed to send packet due to busy channel.\n");
+      dbg("TossimPacketModelC", "TossimPacketModel: PACKET: Failed to send packet due to busy channel.\n");
       signal Packet.sendDone(rval, EBUSY);
     }
   }
@@ -266,13 +269,13 @@ implementation {
     evt->time += duration;
     evt->handle = send_transmit_done;
 
-    dbg("TossimPacketModelC", "PACKET: Broadcasting packet to everyone.\n");
+    dbg("TossimPacketModelC", "TossimPacketModel: PACKET: Broadcasting packet to everyone.\n");
     call GainRadioModel.putOnAirTo(destNode, sending, metadata->ack, evt->time, 0.0, 0.0);
     metadata->ack = 0;
 
     evt->time += (sim_csma_rxtx_delay() *  (sim_ticks_per_sec() / sim_csma_symbols_per_sec()));
 
-    dbg("TossimPacketModelC", "PACKET: Send done at %llu.\n", evt->time);
+    dbg("TossimPacketModelC", "TossimPacketModel: PACKET: Send done at %llu.\n", evt->time);
 	
     sim_queue_insert(evt);
   }
@@ -281,7 +284,7 @@ implementation {
     message_t* rval = sending;
     sending = NULL;
     transmitting = FALSE;
-    dbg("TossimPacketModelC", "PACKET: Signaling send done at %llu.\n", sim_time());
+    dbg("TossimPacketModelC", "TossimPacketModel: PACKET: Signaling send done at %llu.\n", sim_time());
     signal Packet.sendDone(rval, running? SUCCESS:EOFF);
   }
 
@@ -299,7 +302,7 @@ implementation {
       metadata->ack = 1;
       if (msg != sending) {
 	error = 1;
-	dbg("TossimPacketModelC", "Requested ack for 0x%x, but outgoing packet is 0x%x.\n", msg, sending);
+	dbg("TossimPacketModelC", "TossimPacketModel: Requested ack for 0x%x, but outgoing packet is 0x%x.\n", msg, sending);
       }
     }
   }

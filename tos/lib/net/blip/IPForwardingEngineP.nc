@@ -91,7 +91,10 @@ module IPForwardingEngineP {
                                                struct in6_addr *next_hop,
                                                uint8_t ifindex) {
     struct route_entry *entry;
+    static char print_buf4[128];
+ 
     dbg("IPForwardingEngine","addRoute is called\n");
+
     /* no reason to support non-byte length prefixes for now... */
     if (prefix_len_bits % 8 != 0 || prefix_len_bits > 128) return ROUTE_INVAL_KEY;
     entry = call ForwardingTable.lookupRoute(prefix, prefix_len_bits);
@@ -113,23 +116,51 @@ module IPForwardingEngineP {
     entry->prefixlen = prefix_len_bits;
     entry->ifindex = ifindex;
     memcpy(&entry->prefix, prefix, prefix_len_bits / 8);
-    if (next_hop)
+    if (next_hop){
       memcpy(&entry->next_hop, next_hop, sizeof(struct in6_addr));
+     dbg("IPForwardingEngine-Routes","Add destination \t\t\t gateway \t\t\t interface \t\t\t\n");
+     inet_ntop6(&entry->prefix,print_buf4, 128);
+     dbg("IPForwardingEngine-Routes", "\t  %s", print_buf4);
+     dbg_clear("IPForwardingEngine-Routes","/%i\t\t", entry->prefixlen);
+     inet_ntop6(&entry->next_hop, print_buf4, 128);
+      if(&entry->prefixlen == 0){
+          dbg_clear("IPForwardingEngine-Routes", "\t\t %s", print_buf4);
+        }
+        else{
+          dbg_clear("IPForwardingEngine-Routes", "\t\t %s", print_buf4);
+        }       	
+        dbg_clear("IPForwardingEngine-Routes","\t\t %i \n",entry->ifindex);
+    }
     return entry->key;
   }
 
   command error_t ForwardingTable.delRoute(route_key_t key) {
     int i;
+    static char print_buf5[128];
+    dbg("IPForwardingEngine","IPForwardingEngine: Delete Route!\n");
     for (i = 0; i < ROUTE_TABLE_SZ; i++) {
       if (routing_table[i].key == key) {
         /* remove the default route? */
         if (routing_table[i].prefixlen == 0) {
+          dbg("IPForwardingEngine","IPForwardingEngine: signal defaultRouteRemoved\n");
           signal ForwardingTableEvents.defaultRouteRemoved();
         }
 
         memmove((void *)&routing_table[i], (void *)&routing_table[i+1],
                 sizeof(struct route_entry) * (ROUTE_TABLE_SZ - i - 1));
         routing_table[ROUTE_TABLE_SZ-1].valid = 0;
+        dbg("IPForwardingEngine-Routes","Delete destination \t\t\t gateway \t\t\t interface \t\t\t\n");
+        inet_ntop6(&routing_table[i].prefix, print_buf5, 128);
+        dbg("IPForwardingEngine-Routes", "\t  %s", print_buf5);
+        dbg_clear("IPForwardingEngine-Routes","/%i\t\t", routing_table[i].prefixlen);
+        inet_ntop6(&routing_table[i].next_hop, print_buf5, 128);
+        if(routing_table[i].prefixlen == 0){
+          dbg_clear("IPForwardingEngine-Routes", "\t\t %s", print_buf5);
+        }
+        else{
+          dbg_clear("IPForwardingEngine-Routes", "\t %s", print_buf5);
+        }       	
+        dbg_clear("IPForwardingEngine-Routes","\t\t\t %i \n",routing_table[i].ifindex);
         return SUCCESS;
       }
     }
@@ -152,7 +183,6 @@ module IPForwardingEngineP {
 		   min(prefix_len_bits, routing_table[i].prefixlen) / 8) == 0 && 
             prefix_len_bits))) {
         /* match! */
-        dbg("IPForwardingEngine","Index of route table %i\n", i);
         return &routing_table[i];
       }
     }
@@ -180,7 +210,7 @@ module IPForwardingEngineP {
 
 #if defined (PRINTFUART_ENABLED) || defined (TOSSIM)
     if (!call PrintTimer.isRunning())
-      call PrintTimer.startPeriodic(100);
+      call PrintTimer.startPeriodic(10000);
 #endif
 
     if (call IPAddress.isLocalAddress(&pkt->ip6_hdr.ip6_dst) && 
@@ -237,19 +267,19 @@ module IPForwardingEngineP {
       .iov_base = payload,
       .iov_len  = len,
     };
-    dbg("IPForwardingEngine","IPForwardingEngine:IPForward.recv\n");
+    dbg("IPForwardingEngine","IPForwardingEngine: IPForward.recv\n");
     /* signaled before *any* processing  */
     signal IPRaw.recv(iph, payload, len, meta);
 
     if (call IPAddress.isLocalAddress(&iph->ip6_dst)) {
       /* local delivery */
-      dbg("IPForwardingEngine","IPForwardingEngine:Local delivery \n");
+      dbg("IPForwardingEngine","IPForwardingEngine: Local delivery \n");
       signal IP.recv(iph, payload, len, meta);
     } else {
       /* forwarding */
       uint8_t nxt_hdr = IPV6_ROUTING;
       int header_off = call IPPacket.findHeader(&v, iph->ip6_nxt, &nxt_hdr);
-      dbg("IPForwardingEngine","IPForwardingEngine:forwarding \n");
+      dbg("IPForwardingEngine","IPForwardingEngine: Forwarding \n");
       if (!(--iph->ip6_hlim)) {
         /* ICMP may send time exceeded */
         // call ForwardingEvents.drop(iph, payload, len, ROUTE_DROP_HLIM);
@@ -295,7 +325,6 @@ module IPForwardingEngineP {
   
       inet_ntop6(&pkt.ip6_hdr.ip6_src, print_buf_src, 128);
       inet_ntop6(&pkt.ip6_hdr.ip6_dst, print_buf_dst, 128);
-      dbg ("IPForwardingEngine", "Next hop is %s 2@ %s \n", print_buf_nexthop, sim_time_string());
       dbg ("IPForwardingEngine-PTr", "Node: %i is forwarding Packet from src: %s to dst: %s Time: %s \n",TOS_NODE_ID, print_buf_src, print_buf_dst, sim_time_string());
          
       call IPForward.send[next_hop_ifindex](next_hop, &pkt, (void *)next_hop_key);
@@ -327,7 +356,7 @@ module IPForwardingEngineP {
         routing_table_size++;
       }
     }
-    dbg_clear("IPForwardingEngine-Routes","\t\t\t destination \t\t\t gateway \t\t\t interface \t\t\t %i Table Size \n", routing_table_size);
+    dbg("IPForwardingEngine-Routes","\t destination \t\t\t gateway \t\t\t interface \t\t\t %i Table Size \n", routing_table_size);
     for (i = 0; i < ROUTE_TABLE_SZ; i++) {
       if (routing_table[i].valid) {  
         inet_ntop6(&routing_table[i].prefix, print_buf3, 128);
@@ -345,7 +374,6 @@ module IPForwardingEngineP {
 
       }
     }
-    printf("\n");
     printfflush();
   }
 #endif

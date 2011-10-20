@@ -225,8 +225,13 @@ implementation{
       call IPAddress.getLLAddr(&DODAGID);
 #endif
       msg.dagRank = ROOT_RANK;
+      dbg("RPLRoutingEngine","RPLRoutingEnginge: root msg.dagRank = %x\n",msg.dagRank);
     } else {
       msg.dagRank = call RPLRankInfo.getRank(&ADDR_MY_IP);
+      dbg("RPLRoutingEngine","RPLRoutingEngine: non root msg.dagRank = %u\n",msg.dagRank);
+      dbg("RPLRoutingEngine","RPLRouting: my_addr_ip = ");
+      printf_in6addr_dbg(&ADDR_MY_IP);
+      
     }
     
     if (!I_AM_LEAF) {
@@ -300,12 +305,9 @@ implementation{
 
       pkt.ip6_data = &v[0];		
     }
-    /*
-    printf("\n >>>>>> TxDIO etx %d %d %d %lu \n", call RPLRankInfo.getEtx(),  \
-               ntohs(DODAGID.s6_addr16[7]), msg.dagRank, tricklePeriod);
-    */
+     
     printf("TXDIO %d %lu \n", TOS_NODE_ID, ++countdio);
-    //printf("RANK %d %d %d\n", call RPLRankInfo.getRank(&ADDR_MY_IP), call RPLRankInfo.getEtx(), call RPLRankInfo.hasParent());
+    printf("RANK %d, Etx %d, hasParent %d\n", call RPLRankInfo.getRank(&ADDR_MY_IP), call RPLRankInfo.getEtx(), call RPLRankInfo.hasParent());
 
     if (UNICAST_DIO) {
       UNICAST_DIO = FALSE;
@@ -360,6 +362,8 @@ implementation{
 
   void inconsistencyDetected(){
     // when inconsistency detected, reset trickle
+    dbg("TrickleTimer","RPLRoutingEngine: inconsistencyDetected, going to reset Timer\n");
+
     INCONSISTENCY_COUNT ++;
     call RPLRankInfo.inconsistencyDetected(/*&ADDR_MY_IP*/); // inconsistency on my on node detected?
 
@@ -384,7 +388,7 @@ implementation{
   void resetTrickleTime(){
 
     call TrickleTimer.stop();
-    //dbg("TrickleTimer","TrickleTimer:DIOIntMin = %u\n",DIOIntMin);
+    dbg("TrickleTimer","TrickleTimer reset: DIOIntMin = %u\n",DIOIntMin);
     tricklePeriod = 2 << (DIOIntMin-1);
     redunCounter = 0;
     doubleCounter = 0;    
@@ -425,6 +429,7 @@ implementation{
 
   /********************* RPLRouteInfo *********************/
   command void RPLRouteInfo.inconsistency(){
+    dbg("RPLRoutingEngine","RPLRoutingEngine: RPLRouteInfo definition inconsistencyDetected\n");
     inconsistencyDetected();
   }
 
@@ -555,6 +560,7 @@ implementation{
 
   event void RPLRankInfo.parentRankChange(){
     // type 6 inconsistency
+    dbg("RPLRoutingEngine","RPLRoutingEngine: type 6 inconsistency\n");
     inconsistencyDetected();
   }
 
@@ -588,8 +594,9 @@ implementation{
                          size_t len, struct ip6_metadata *meta) {
     struct dio_base_t *dio = (struct dio_base_t *)payload;
     if (!running) return;
-printf_in6addr_dbg(&ADDR_MY_IP);
-printf_dbg("Status vor DAG akzeptiert 111 in Routing Engine Jetzt Rank: %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
+    printf_dbg("RPLRoutingEngine","RPLRoutingEngine: IP_DIO.recv: MY_IP = ");
+    printf_in6addr_dbg(&ADDR_MY_IP);
+    printf_dbg("Status vor DAG akzeptiert 111 in Routing Engine Jetzt Rank: %i \n",call RPLRankInfo.getRank(&ADDR_MY_IP));
 
     if (I_AM_ROOT) {
  printf_dbg("Ich bin root \n");
@@ -675,6 +682,7 @@ printf_dbg("I am leaf und habe noch keinen DAG \n");
         node_rank = call RPLRankInfo.getRank(&ADDR_MY_IP);
       }
       // type 2 inconsistency
+      dbg("RPLRoutingEngine","RPLRoutingEngine: type 2 inconsistency\n");
       inconsistencyDetected();
       return;
     }
@@ -695,6 +703,7 @@ printf_dbg("I am leaf und habe noch keinen DAG \n");
     return;
   accept_dodag:
     //printf("new dodag \n");
+    printf("new dodag, call resetTrickle \n");
     // assume that this DIO is from the DODAG with the
     // highest preference and is the preferred parent's DIO packet?
     hasDODAG = TRUE;

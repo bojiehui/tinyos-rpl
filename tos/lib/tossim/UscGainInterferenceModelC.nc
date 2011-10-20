@@ -87,7 +87,7 @@ implementation {
     receive_message_t* current = outstandingReceptionHead;
     double localNoise = sim_gain_sample_noise(sim_node());
     double sig = pow(10.0, localNoise / 10.0);
-    dbg("Gain", "Computing noise @ %s: %0.2f", sim_time_string(), localNoise);
+    dbg("Gain", "Gain: Computing noise @ %s: %0.2f", sim_time_string(), localNoise);
     while (current != NULL) {
       sig += pow(10.0, current->power / 10.0);
       	dbg_clear("Gain", " ");

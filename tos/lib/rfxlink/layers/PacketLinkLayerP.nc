@@ -81,47 +81,64 @@ implementation
 		RADIO_ASSERT( state != STATE_READY );
 
 		retries = call PacketLink.getRetries(currentMsg);
+                dbg("PLink","PLink: currentMsg retries = %u\n", retries);
 
 		if( state == STATE_SENDDONE )
 		{
-			if( retries == 0 || call PacketAcknowledgements.wasAcked(currentMsg) )
-				state = STATE_SIGNAL + SUCCESS;
+                  	dbg("PLink","PLink: state = senddone, retries = %u\n",retries);
+                        dbg("PLink","PLink: currentMsg was Acked? %i\n", call PacketAcknowledgements.wasAcked(currentMsg));
+			if( retries == 0 || call PacketAcknowledgements.wasAcked(currentMsg) ){
+                          dbg("PLink","PLink:1 totalRetries = %u\n", totalRetries);
+                          dbg("PLink","PLink: set state to state_signal + success\n");
+                          state = STATE_SIGNAL + SUCCESS;
+                        }
 			else if( ++totalRetries < retries )
 			{
 				uint16_t delay;
-
+                                dbg("PLink","PLink:2 totalRetries = %u\n",totalRetries);
 				state = STATE_SENDING;
+                                dbg("PLink","PLink: getRetryDelay.\n");
 				delay = call PacketLink.getRetryDelay(currentMsg);
 
 				if( delay > 0 )
 				{
+              
 					call DelayTimer.startOneShot(delay);
 					return;
 				}
 			}
 			else
-				state = STATE_SIGNAL + FAIL;
+                          {    
+                            dbg("PLink","PLink: set state to state_signal + fail\n");
+                            state = STATE_SIGNAL + FAIL;
+                          }
 		}
 
 		if( state == STATE_SENDING )
 		{
-			state = STATE_SENDDONE;
+                  dbg("PLink","PLink: update state from SENDING to STATE_SENDDONE\n");
+                  state = STATE_SENDDONE;
 
-			if( call SubSend.send(currentMsg) != SUCCESS )
-				post send();
+                  if( call SubSend.send(currentMsg) != SUCCESS )
+                    {
+                      dbg("PLink","PLink: SubSend.send unsuccessful, post send()\n");
+                      post send();
 
-			return;
+                    }
+
+                  return;
 		}
 
 		if( state >= STATE_SIGNAL )
 		{
 			error_t error = state - STATE_SIGNAL;
-
+                       
 			// do not update the retries count for non packet link messages
 			if( retries > 0 )
 				call PacketLink.setRetries(currentMsg, totalRetries);
 
 			state = STATE_READY;
+                        dbg("PLink","PLink: update state >= STATE_SIGNAL to STATE_READY, signal sendDone\n");
 			signal Send.sendDone(currentMsg, error);
 		}
 	}
@@ -133,15 +150,14 @@ implementation
 
 		if( error != SUCCESS )
 			state = STATE_SIGNAL + error;
-
+                dbg("PLink","PLink: SubSend.sendDone post send()\n");
 		post send();
-		dbg("Bo-PLink","PLink:Send Done @ %s.\n",sim_time_string());
 	}
 
 	event void DelayTimer.fired()
 	{
 		RADIO_ASSERT( state == STATE_SENDING );
-
+                dbg("PLink","PLink: DelayTimer fired, post send\n");
 		post send();
 	}
 
@@ -152,13 +168,15 @@ implementation
 
 		// it is enough to set it only once
 		if( call PacketLink.getRetries(msg) > 0 )
-			call PacketAcknowledgements.requestAck(msg);
-
+                  {   
+                    dbg("PLink","PLink: retries = %u\n",call PacketLink.getRetries(msg));
+                    call PacketAcknowledgements.requestAck(msg);
+                  }
 		currentMsg = msg;
 		totalRetries = 0;
 		state = STATE_SENDING;
+                dbg("PLink","PLink: Send.send post Send @ %s.\n",sim_time_string());
 		post send();
-		dbg("Bo-PLink","PLink:Send @ %s.\n",sim_time_string());
 		return SUCCESS;
 	}
 

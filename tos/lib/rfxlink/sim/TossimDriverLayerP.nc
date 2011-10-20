@@ -95,18 +95,18 @@ generic module TossimDriverLayerP() {
   void dbg_message(message_t* msg) {
     uint8_t i;
     
-    dbg("Driver.trace", " - message (rssi: %hhu, ack: %hhu):", call RSSIFlag.get(msg), 
+    /* dbg_clear("Driver.trace", " - message (rssi: %hhu, ack: %hhu):", call RSSIFlag.get(msg), 
 #ifdef TOSSIM_HARDWARE_ACK
 call AckReceivedFlag.get(msg)
 #else
 0
 #endif
-);
+);*/
    
     for(i=0; i<sizeof(message_t); i++) {
-      dbg_clear("Driver.trace", " %hhu", *((uint8_t*)msg + i));
+      dbg("Driver.trace", " %hhu", *((uint8_t*)msg + i));
     }
-    dbg_clear("Driver.trace", "\n");
+    dbg("Driver.trace", "\n");
   }
 
   /***************** Init ****************/

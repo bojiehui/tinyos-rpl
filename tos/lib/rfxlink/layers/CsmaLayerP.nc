@@ -72,14 +72,14 @@ implementation
 	tasklet_async command error_t RadioSend.send(message_t* msg)
 	{
 		error_t error;
-		dbg("Bo-Csma","Csma:Send @ %s.\n",sim_time_string());
+		dbg("Csma","Csma: RadioSend.send @ %s.\n",sim_time_string());
 
 		if( state == STATE_READY )
 		{
 			if( call Config.requiresSoftwareCCA(msg) )
 			{
 				txMsg = msg;
-
+                                dbg("Csma","Csma: softwareCCA required @ %s.\n",sim_time_string());
 				if( (error = call SubCCA.request()) == SUCCESS )
 					state = STATE_CCA_WAIT;
 			}
@@ -96,11 +96,14 @@ implementation
 	{
 		RADIO_ASSERT( state == STATE_CCA_WAIT );
 
-		if( error == SUCCESS && (error = call SubSend.send(txMsg)) == SUCCESS )
-			state = STATE_SEND;
+		if( error == SUCCESS && (error = call SubSend.send(txMsg)) == SUCCESS ){
+                  state = STATE_SEND;
+                  dbg("Csma","Csma: SubCCA.done @ %s.\n",sim_time_string());
+                }
 		else
 		{
 			state = STATE_READY;
+                        dbg("Csma","Csma:RadioSend.sendDone(EBUSY) @ %s.\n",sim_time_string());
 			signal RadioSend.sendDone(EBUSY);
 		}
 	}
@@ -111,7 +114,7 @@ implementation
 
 		state = STATE_READY;
 		signal RadioSend.sendDone(error);
-		dbg("Bo-Csma","Csma:SendDone @ %s.\n",sim_time_string());
+		dbg("Csma","Csma:SendDone @ %s.\n",sim_time_string());
 
 	}
 }
