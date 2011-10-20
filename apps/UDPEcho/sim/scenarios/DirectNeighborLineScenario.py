@@ -32,8 +32,6 @@ class DirectNeighborLineScenario(Scenario):
                 y = 0
                 z = 0
             else:
-                #x = (((id-2)/self.size)+1)*self.distance
-                #y = (((id-2)%self.size)+1)*self.distance
                 x = (id-1)*self.distance
                 y = 0
                 z = 0
