@@ -8,7 +8,6 @@ def floatRange(a, b, inc):
   """
   try: x = [float(a)]
   except: return False
-  #print b,a,inc,int(math.ceil((b-a)/inc))
   for i in range(1, int(math.ceil((b - a ) / inc))): 
     x. append(a + i * inc)
   return x
@@ -45,7 +44,7 @@ class Time:
         return ((24*self.h)+60*self.m) + self.s
     
     def in_milisecond(self):
-        return 1000*self.in_second()
+        return 1024*self.in_second()
 
     def __str__(self):
         return ""
