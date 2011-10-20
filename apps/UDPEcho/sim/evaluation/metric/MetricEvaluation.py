@@ -23,7 +23,6 @@ class MetricEvaluation:
         logger.info("="*40)
 
         pm = PacketMetric()
-        #pm.execute(executable_info, scenario_info)
         pm.execute(scenario_info)
         del pm
         gc.collect()
